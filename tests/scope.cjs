@@ -238,6 +238,28 @@ function voices(proc) { return Array.from(proc.engine.slots).filter(Boolean).map
   assert.equal(crossings(soloLeft), 44, "A4 for 0.1 s");
   assert.equal(Math.round(crossings(right) / 4800 * 48000 / 10), Math.round(466.16 / 10), "detuned a semitone up");
 }
+// Pitch bend and mod wheel: centred wheels change nothing, a bend moves sounding notes, vibrato keeps the average pitch.
+{
+  const crossings = x => x.slice(1).filter((s, i) => x[i] <= 0 && s > 0).length;
+  const a4 = (...messages) => {
+    const synth = combination([part(sine, {}), ...Array.from({length:15}, () => off(sine))]);
+    messages.forEach(m => send(synth, m));
+    start(synth, 1, 69);
+    return renderStereo(synth, 48000)[0];
+  };
+  const plain = a4();
+  assert.deepEqual(a4({type:"bend", semitones:0}, {type:"modulation", amount:0}), plain);
+  assert(Math.abs(crossings(a4({type:"bend", semitones:2})) - 493.88) <= 2, "two semitones up");
+  assert(Math.abs(crossings(a4({type:"bend", semitones:-12})) - 220) <= 1, "an octave down");
+  const wobbly = a4({type:"modulation", amount:1});
+  assert(Math.abs(crossings(wobbly) - 440) <= 2);
+  assert.notDeepEqual(wobbly, plain);
+  const held = combination([part(sine, {}), ...Array.from({length:15}, () => off(sine))]);
+  start(held, 1, 69);
+  renderStereo(held, 4800);
+  send(held, {type:"bend", semitones:12});
+  assert(Math.abs(crossings(renderStereo(held, 48000)[0]) - 880) <= 3, "the sounding note follows the bend");
+}
 // The scope follows the timbre being edited and reports it.
 {
   const synth = combination([part(bank[0], {}), part(bank[4], {}), ...Array.from({length:14}, () => off(sine))]);
@@ -285,12 +307,16 @@ for (const p of [...bank, ...combis.flatMap(c => c.timbres.map(t => t.program))]
   assert.deepEqual(parse([0xb0, 64, 127]), {type:"cc", channel:1, controller:64, value:127});
   assert.deepEqual(parse([0xc4, 5]), {type:"program", channel:5, program:5});
   assert.equal(page.parseMidi([0xf8]), null, "clock");
-  assert.equal(page.parseMidi([0xe0, 0, 64]), null, "pitch bend is ignored");
+  assert.deepEqual(parse([0xe0, 0, 64]), {type:"bend", channel:1, bend:0});
+  assert.deepEqual(parse([0xe2, 127, 127]), {type:"bend", channel:3, bend:1});
+  assert.deepEqual(parse([0xe0, 0, 0]), {type:"bend", channel:1, bend:-1});
+  assert.deepEqual(parse([0xe0, 0, 96]), {type:"bend", channel:1, bend:4096 / 8191});
 
   const log = [];
   const router = new page.MidiRouter({
     strike:(t, n, v) => log.push(["strike", t, n, Math.round(v * 127)]), lift:t => log.push(["lift", t]),
-    silence:() => log.push(["silence"]), program:n => log.push(["program", n])
+    silence:() => log.push(["silence"]), program:n => log.push(["program", n]),
+    bend:x => log.push(["bend", x]), modulation:x => log.push(["modulation", x])
   });
   const take = () => JSON.parse(JSON.stringify(log.splice(0)));
   router.receive([0x90, 60, 90], "kbd");
@@ -331,5 +357,18 @@ for (const p of [...bank, ...combis.flatMap(c => c.timbres.map(t => t.program))]
   assert.deepEqual(take(), [["silence"]], "after All Sound Off the late note-off is ignored");
   router.receive([0xc1, 3], "kbd");
   assert.deepEqual(take(), [["program", 3]]);
+
+  // Pitch bend, mod wheel and Reset All Controllers, which also lifts the pedal.
+  router.receive([0xe0, 0, 0], "kbd");
+  assert.deepEqual(take(), [], "bend on channel 1 is filtered out");
+  router.receive([0xe1, 0, 0], "kbd");
+  router.receive([0xb1, 1, 127], "kbd");
+  assert.deepEqual(take(), [["bend", -1], ["modulation", 1]]);
+  router.receive([0xb1, 64, 127], "kbd");
+  router.receive([0x91, 60, 100], "kbd");
+  router.receive([0x81, 60, 0], "kbd");
+  take();
+  router.receive([0xb1, 121, 0], "kbd");
+  assert.deepEqual(take(), [["bend", 0], ["modulation", 0], ["lift", "midi:kbd:2:60"]]);
 }
-console.log("Nine-channel scope, algorithm, phrase, combination and MIDI checks passed.");
+console.log("Nine-channel scope, algorithm, phrase, combination, MIDI and pitch wheel checks passed.");

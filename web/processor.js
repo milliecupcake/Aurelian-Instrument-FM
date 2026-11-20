@@ -3,6 +3,8 @@
 __SHARED_LIB__
 const tau = 2 * Math.PI;
 const sine = Float32Array.from({length:2049}, (_, i) => Math.sin(tau * i / 2048));
+// Mod wheel at full depth: ±VIBRATO_DEPTH semitones at VIBRATO_HZ. Wheel moves glide over about 4 ms.
+const VIBRATO_DEPTH = 0.5, VIBRATO_HZ = 5.5, GLIDE_SECONDS = 0.004;
 
 class PreviewEngine {
   constructor(rate) {
@@ -11,6 +13,27 @@ class PreviewEngine {
     this.serial = 0;
     this.focusTimbre = 0;
     this.taps = new Float32Array(128 * OPS);
+    this.bend = 0; this.vibrato = 0; this.bendNow = 0; this.vibratoNow = 0; this.lfo = 0;
+    this.glide = 1 - Math.exp(-1 / Math.max(1, GLIDE_SECONDS * rate));
+    this.pitch = new Float64Array(128);
+  }
+  // Pitch bend in semitones and mod wheel depth (0–1), shared by every voice.
+  setBend(semitones) { this.bend = Number.isFinite(semitones) ? Math.min(24, Math.max(-24, semitones)) : 0; }
+  setVibrato(amount) { this.vibrato = Number.isFinite(amount) ? Math.min(1, Math.max(0, amount)) : 0; }
+  advancePitch(length) {
+    const out = this.pitch.subarray(0, length);
+    if (!this.bend && !this.vibrato && !this.bendNow && !this.vibratoNow) return out.fill(1);
+    for (let n = 0; n < length; n++) {
+      this.bendNow += (this.bend - this.bendNow) * this.glide;
+      this.vibratoNow += (this.vibrato - this.vibratoNow) * this.glide;
+      if (Math.abs(this.bend - this.bendNow) < 1e-5) this.bendNow = this.bend;
+      if (Math.abs(this.vibrato - this.vibratoNow) < 1e-5) this.vibratoNow = this.vibrato;
+      const semitones = this.bendNow + this.vibratoNow * VIBRATO_DEPTH * Math.sin(tau * this.lfo);
+      this.lfo += VIBRATO_HZ / this.rate;
+      if (this.lfo >= 1) this.lfo -= 1;
+      out[n] = 2 ** (semitones / 12);
+    }
+    return out;
   }
   // setup: 16 timbres, each with its settings and a full Program.
   setup(timbres) { this.timbres = timbres; }
@@ -79,6 +102,7 @@ class PreviewEngine {
       this.focusTimbreShown = focus?.timbre ?? 0;
       if (!focus) this.taps.fill(0);
     }
+    const pitch = this.advancePitch(left.length);
     for (let slot=0; slot<this.slots.length; slot++) {
       const v=this.slots[slot];
       if (!v) continue;
@@ -105,8 +129,8 @@ class PreviewEngine {
           if(i===OPS-1) turns+=(v.recent+v.older)*v.feedback*2/tau;
           const position=(turns-Math.floor(turns))*2048, k=Math.floor(position);
           values[i]=(sine[k]+(sine[k+1]-sine[k])*(position-k))*o.env*o.level*v.velocity;
-          o.p+=o.step;
-          if(o.p>=1) o.p-=1;
+          o.p+=o.step*pitch[n];
+          if(o.p>=1) o.p-=Math.floor(o.p);
         }
         v.older=v.recent; v.recent=values[OPS-1];
         if (v === focus) this.taps.set(values, n * OPS);
@@ -143,6 +167,8 @@ class RustEngine {
   on(id,n,v) { this.wasm.note_on(id,n,v); }
   off(id) { this.wasm.note_off(id); }
   silence() { this.wasm.silence(); }
+  setBend(semitones) { this.wasm.pitch_bend(semitones); }
+  setVibrato(amount) { this.wasm.modulation(amount); }
   render(left, right, monitor) {
     const ptr = this.wasm.render(left.length, monitor ? 1 : 0);
     const memory = this.wasm.memory.buffer;
@@ -179,6 +205,8 @@ class FMProcessor extends AudioWorkletProcessor {
       if(m.type==="on") this.engine.on(m.id,m.note,m.velocity);
       if(m.type==="off") this.engine.off(m.id);
       if(m.type==="silence") this.engine.silence();
+      if(m.type==="bend") this.engine.setBend(m.semitones);
+      if(m.type==="modulation") this.engine.setVibrato(m.amount);
       if(m.type==="scope" && !this.frame) {
         this.frame = new Float32Array(m.buffer);
         this.written = 0;

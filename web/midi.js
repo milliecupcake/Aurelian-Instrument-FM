@@ -10,11 +10,17 @@ function parseMidi(data) {
   if (type === 0x8 || type === 0x9) return {type:"off", channel, note:a};   // note on with velocity 0 is a note off
   if (type === 0xb) return {type:"cc", channel, controller:a, value:b};
   if (type === 0xc) return {type:"program", channel, program:a};
+  if (type === 0xe) {
+    // 14-bit value centred on 8192, scaled so both full throws reach exactly ±1.
+    const value = (b << 7 | a) - 8192;
+    return {type:"bend", channel, bend:value / (value < 0 ? 8192 : 8191)};
+  }
   return null;
 }
 
 // Tracks which MIDI keys are down and the sustain pedal, and calls the page:
-// strike(token, note, velocity 0–1), lift(token), silence() and program(number).
+// strike(token, note, velocity 0–1), lift(token), silence(), program(number),
+// bend(−1 to 1, 0 centred) and modulation(0–1, the mod wheel, CC1).
 // A token names one key on one channel of one input, so two keyboards never collide.
 class MidiRouter {
   constructor(page) {
@@ -36,6 +42,10 @@ class MidiRouter {
     } else if (m.type === "off") {
       if (!this.sounding.has(token)) return m;
       if (this.pedal) this.sustained.add(token); else this.lift(token);
+    } else if (m.type === "bend") {
+      this.page.bend(m.bend);
+    } else if (m.type === "cc" && m.controller === 1) {
+      this.page.modulation(m.value / 127);
     } else if (m.type === "cc" && m.controller === 64) {
       this.pedal = m.value >= 64;
       if (!this.pedal) for (const t of [...this.sustained]) this.lift(t);
@@ -44,6 +54,11 @@ class MidiRouter {
       this.sounding.clear();
       this.sustained.clear();
       this.page.silence();
+    } else if (m.type === "cc" && m.controller === 121) {
+      // Reset All Controllers: centre the wheels and lift the pedal. Keys stay down.
+      this.page.bend(0);
+      this.page.modulation(0);
+      this.receive([0xb0 | m.channel - 1, 64, 0], source);
     } else if (m.type === "cc" && m.controller === 123) {
       // All Notes Off: release every key, as if all were lifted with the pedal up.
       this.releaseAll();

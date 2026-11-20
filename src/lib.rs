@@ -61,6 +61,10 @@ mod audio {
     #[no_mangle]
     pub extern "C" fn silence() { with_engine(|e| e.silence()); }
     #[no_mangle]
+    pub extern "C" fn pitch_bend(semitones: f32) { with_engine(|e| e.set_bend(semitones)); }
+    #[no_mangle]
+    pub extern "C" fn modulation(amount: f32) { with_engine(|e| e.set_vibrato(amount)); }
+    #[no_mangle]
     pub extern "C" fn scope_ptr() -> *const u32 {
         AUDIO.with(|cell| &cell.borrow().as_ref().expect("call init before scope_ptr").scope.voice as *const u32)
     }

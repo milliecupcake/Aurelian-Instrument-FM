@@ -10,6 +10,13 @@ pub const OPS: usize = 8;
 pub const POLYPHONY: usize = 64;
 pub const TIMBRES: usize = 16;
 const TABLE: usize = 2048;
+/// The mod wheel at full depth swings the pitch this many semitones either way.
+pub const VIBRATO_DEPTH: f32 = 0.5;
+pub const VIBRATO_HZ: f32 = 5.5;
+/// Bend and mod wheel moves glide over about this many seconds, so stepped MIDI values do not click.
+const GLIDE_SECONDS: f32 = 0.004;
+/// Pitch is computed once per sample for blocks of this size.
+const CHUNK: usize = 128;
 
 #[derive(Clone, Copy)]
 pub struct Operator {
@@ -151,7 +158,8 @@ impl Voice {
         }
     }
 
-    fn next(&mut self, sine: &[f32; TABLE + 1]) -> (f32, [f32; OPS]) {
+    /// `pitch` multiplies every operator's frequency for this sample (bend and vibrato).
+    fn next(&mut self, sine: &[f32; TABLE + 1], pitch: f32) -> (f32, [f32; OPS]) {
         let mut values = [0.0; OPS];
         let mut mixed = 0.0;
         for i in (0..OPS).rev() {
@@ -173,8 +181,8 @@ impl Voice {
             let index = whole % TABLE;
             let sample = sine[index] + (sine[index + 1] - sine[index]) * (position - whole as f32);
             values[i] = sample * op.envelope * op.level * self.velocity;
-            op.phase += op.step;
-            if op.phase >= 1.0 { op.phase -= 1.0; }
+            op.phase += op.step * pitch;
+            if op.phase >= 1.0 { op.phase -= op.phase.floor(); }
             if self.route.carriers >> i & 1 == 1 { mixed += values[i]; }
         }
         self.history = [values[OPS - 1], self.history[0]];
@@ -193,6 +201,10 @@ pub struct Engine {
     pub timbres: [Timbre; TIMBRES],
     /// The scope follows the newest voice of this timbre, or the newest voice of any timbre.
     pub scope_timbre: usize,
+    /// Pitch bend in semitones and mod wheel depth (0–1), shared by every voice.
+    bend: f32, vibrato: f32,
+    /// The values actually sounding, gliding towards `bend` and `vibrato`, and the vibrato phase in turns.
+    bend_now: f32, vibrato_now: f32, lfo: f32, glide: f32,
     rate: f32, serial: u64, sine: [f32; TABLE + 1], voices: [Option<Voice>; POLYPHONY],
 }
 
@@ -214,6 +226,8 @@ impl Engine {
         timbres[0].on = true;
         Self {
             programs: [Patch::default(); TIMBRES], timbres, scope_timbre: 0, rate, serial: 0,
+            bend: 0.0, vibrato: 0.0, bend_now: 0.0, vibrato_now: 0.0, lfo: 0.0,
+            glide: 1.0 - (-1.0 / (GLIDE_SECONDS * rate).max(1.0)).exp(),
             sine: std::array::from_fn(|i| (TAU * i as f32 / TABLE as f32).sin()),
             voices: std::array::from_fn(|_| None),
         }
@@ -251,6 +265,35 @@ impl Engine {
 
     pub fn silence(&mut self) { self.voices.fill_with(|| None); }
 
+    /// Bends every voice, sounding and future, by this many semitones (±24).
+    pub fn set_bend(&mut self, semitones: f32) {
+        self.bend = if semitones.is_finite() { semitones.clamp(-24.0, 24.0) } else { 0.0 };
+    }
+
+    /// Mod wheel: vibrato depth from 0 (none) to 1 (±`VIBRATO_DEPTH` semitones).
+    pub fn set_vibrato(&mut self, amount: f32) {
+        self.vibrato = if amount.is_finite() { amount.clamp(0.0, 1.0) } else { 0.0 };
+    }
+
+    /// Fills `out` with the frequency multiplier for each coming sample.
+    fn advance_pitch(&mut self, out: &mut [f32]) {
+        if self.bend == 0.0 && self.vibrato == 0.0 && self.bend_now == 0.0 && self.vibrato_now == 0.0 {
+            out.fill(1.0);
+            return;
+        }
+        let step = VIBRATO_HZ / self.rate;
+        for ratio in out {
+            self.bend_now += (self.bend - self.bend_now) * self.glide;
+            self.vibrato_now += (self.vibrato - self.vibrato_now) * self.glide;
+            if (self.bend - self.bend_now).abs() < 1e-5 { self.bend_now = self.bend; }
+            if (self.vibrato - self.vibrato_now).abs() < 1e-5 { self.vibrato_now = self.vibrato; }
+            let semitones = self.bend_now + self.vibrato_now * VIBRATO_DEPTH * (TAU * self.lfo).sin();
+            self.lfo += step;
+            if self.lfo >= 1.0 { self.lfo -= 1.0; }
+            *ratio = (semitones / 12.0).exp2();
+        }
+    }
+
     pub fn render(&mut self, left: &mut [f32], right: &mut [f32]) {
         self.render_block(left, right, None);
     }
@@ -271,22 +314,26 @@ impl Engine {
             newest(&mut self.voices.iter().flatten().filter(|v| v.timbre == wanted))
                 .or_else(|| newest(&mut self.voices.iter().flatten()))
         });
-        if focus.is_none() {
-            if let Some(rows) = taps.as_deref_mut() { rows.fill([0.0; OPS]); }
-        }
+        if let Some(rows) = taps.as_deref_mut() { rows.fill([0.0; OPS]); }
         left.fill(0.0);
         right.fill(0.0);
-        for slot in &mut self.voices {
-            if let Some(voice) = slot {
-                let [gl, gr] = voice.gains;
-                let mut rows = taps.as_deref_mut().filter(|_| focus.is_some_and(|f| f.serial == voice.serial));
-                for n in 0..left.len() {
-                    let (mixed, operators) = voice.next(&self.sine);
-                    left[n] += mixed * gl;
-                    right[n] += mixed * gr;
-                    if let Some(rows) = rows.as_deref_mut() { rows[n] = operators; }
+        let mut pitch = [1.0; CHUNK];
+        for start in (0..left.len()).step_by(CHUNK) {
+            let end = (start + CHUNK).min(left.len());
+            let pitch = &mut pitch[..end - start];
+            self.advance_pitch(pitch);
+            for slot in &mut self.voices {
+                if let Some(voice) = slot {
+                    let [gl, gr] = voice.gains;
+                    let mut rows = taps.as_deref_mut().filter(|_| focus.is_some_and(|f| f.serial == voice.serial));
+                    for n in start..end {
+                        let (mixed, operators) = voice.next(&self.sine, pitch[n - start]);
+                        left[n] += mixed * gl;
+                        right[n] += mixed * gr;
+                        if let Some(rows) = rows.as_deref_mut() { rows[n] = operators; }
+                    }
+                    if voice.ended() { *slot = None; }
                 }
-                if voice.ended() { *slot = None; }
             }
         }
         // Fixed headroom for chords, followed by a bounded soft limiter on each channel.
@@ -419,6 +466,41 @@ mod tests {
         scoped.silence();
         assert!(scoped.render_with_scope(&mut b, &mut br, &mut taps).is_none());
         assert_eq!(taps, [[0.0; OPS]; 128]);
+    }
+
+    #[test]
+    fn pitch_bend_and_vibrato() {
+        let a4 = |setup: &dyn Fn(&mut Engine)| {
+            let mut e = Engine::new(48000.0);
+            pure(&mut e, 0);
+            setup(&mut e);
+            e.on(1, 69, 1.0);
+            let (mut l, mut r) = block(48000);
+            e.render(&mut l, &mut r);
+            (crossings(&l), l)
+        };
+        let (plain, reference) = a4(&|_| {});
+        let (centred, same) = a4(&|e| { e.set_bend(0.0); e.set_vibrato(0.0); });
+        assert_eq!((plain, &reference), (centred, &same), "centred wheels change nothing");
+        // Two semitones up is 493.88 Hz; twelve down is 220 Hz. The glide takes a few milliseconds.
+        assert!((492..=495).contains(&a4(&|e| e.set_bend(2.0)).0));
+        assert!((219..=221).contains(&a4(&|e| e.set_bend(-12.0)).0));
+        // Bending a sounding note moves it too.
+        let mut e = Engine::new(48000.0);
+        pure(&mut e, 0);
+        e.on(1, 69, 1.0);
+        let (mut l, mut r) = block(48000);
+        e.render(&mut l, &mut r);
+        e.set_bend(12.0);
+        e.render(&mut l, &mut r);
+        assert!((877..=881).contains(&crossings(&l)), "the glide costs a cycle or two");
+        // Vibrato keeps the average pitch but changes the waveform.
+        let (wobbly, vibrato) = a4(&|e| e.set_vibrato(1.0));
+        assert!((438..=442).contains(&wobbly));
+        assert_ne!(vibrato, reference);
+        e.set_bend(f32::NAN);
+        e.set_vibrato(f32::INFINITY);
+        assert_eq!((e.bend, e.vibrato), (0.0, 0.0), "bad values centre the wheels");
     }
 
     #[test]

@@ -19,7 +19,7 @@ main{max-width:1140px;margin:0 auto;padding:22px 32px 24px}
 .screen{display:flex;flex-direction:column;justify-content:space-between;gap:10px}
 .algo{align-items:center}.algo select{height:28px;border:1px solid var(--line);border-radius:4px;background:var(--panel);font:600 12px var(--mono);padding:0 4px}.algo button{min-width:28px}
 .screen-foot{flex-wrap:wrap}.mode{display:flex;gap:3px}.mode button{height:22px;padding:0 8px;font:600 10px var(--mono);letter-spacing:.1em;background:transparent;color:#adc4ad;border-color:#56705f}.mode button[aria-pressed=true]{background:#e1e9ca;color:var(--ink);border-color:#e1e9ca}
-/* Grid children may shrink, so the wide Timbre table scrolls inside its own box. */.deck>*{min-width:0}.midi{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid #d5d8c8;font-size:12px}.midi .small{color:#53695e}.midi button{height:27px;padding:0 10px;font-size:12px}.midi select{height:27px;max-width:220px;border:1px solid var(--line);border-radius:4px;background:#fbfaf3;font:12px var(--sans)}#midiStatus{color:var(--soft)}#midiDot.on{background:#c16a46;box-shadow:0 0 0 3px #c16a4633}
+/* Grid children may shrink, so the wide Timbre table scrolls inside its own box. */.deck>*{min-width:0}.midi{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid #d5d8c8;font-size:12px}.midi .small{color:#53695e}.midi button{height:27px;padding:0 10px;font-size:12px}.midi select{height:27px;max-width:220px;border:1px solid var(--line);border-radius:4px;background:#fbfaf3;font:12px var(--sans)}#midiStatus{color:var(--soft)}#midiDot.on{background:#c16a46;box-shadow:0 0 0 3px #c16a4633}.wheels input{width:110px}.wheels output{font:650 12px var(--mono);min-width:3.4em}.wheels label{color:#4e6359}
 .combi .section-title{gap:10px;flex-wrap:wrap}.combi-hint{font-size:11px;color:var(--soft)}.timbre-wrap{overflow-x:auto;margin-top:10px}.timbres{border-collapse:collapse;width:100%;min-width:860px;font-size:12px}.timbres th{font:600 10px var(--mono);letter-spacing:.06em;color:#53695e;text-align:left;padding:0 5px 5px;white-space:nowrap}.timbres td{padding:2px 5px;border-top:1px solid #d9dccd;white-space:nowrap}.timbres tr.off td:not(:first-child):not(:nth-child(2)){opacity:.45}.timbres tr.editing td{background:#e6e9da}.timbres button{height:24px;min-width:34px;font:600 11px var(--mono)}.timbres select,.timbres input[type=number]{font:12px var(--mono);height:24px;border:1px solid var(--line);border-radius:3px;background:#fbfaf3}.timbres select.program{width:150px}.timbres input[type=number]{width:52px}.timbres input[type=range]{width:74px;vertical-align:middle}.timbres output{display:inline-block;width:34px;font:11px var(--mono);text-align:right}.timbres .dash{margin:0 3px;color:#6d7d70}
 .screen-foot select{flex:1 1 130px;height:34px;min-width:0;max-width:100%;border:1px solid #79907c;border-radius:4px;background:transparent;color:#e0e8d3;font-size:12px;padding:0 6px}
 .routing{display:block;position:relative;height:auto;margin:8px 0 3px}.routing svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}.routing path{fill:none;stroke:#8d9c8d;stroke-width:1}.routing path.bus{stroke:#859a86;stroke-width:2}.routing .node{position:absolute;transform:translate(-50%,-50%)}
@@ -60,6 +60,7 @@ main{max-width:1140px;margin:0 auto;padding:22px 32px 24px}
 </section>
 <section class="module"><div class="editor-head"><h2>音色編集 <span class="role" id="role"></span></h2><div class="edit-tabs" id="operators" aria-label="編集するオペレーター"></div></div><div class="params" id="params"></div><p class="edit-foot" id="editHint"></p></section>
 <section class="module"><div class="key-head"><h2>鍵盤 <span class="small">Keyboard</span></h2><div class="key-controls"><span>Oct</span><button id="octDown" aria-label="1オクターブ下げる">−</button><output id="octave"></output><button id="octUp" aria-label="1オクターブ上げる">＋</button><label for="gain" class="gain-control">音量</label><input type="range" id="gain" min="0" max="1" step=".01" value=".65"></div></div><div id="keys" class="keys" aria-label="演奏鍵盤"></div><div class="key-foot"><span>A〜K で演奏 ／ W・E・T・Y・U が黒鍵</span><span>Shift で強く弾く</span></div>
+<div class="midi wheels" role="group" aria-label="ピッチベンドとモジュレーション"><span class="small">WHEEL</span><label for="bendWheel">ベンド</label><input type="range" id="bendWheel" min="-1" max="1" step=".01" value="0"><output id="bendValue" for="bendWheel">0.0</output><label for="modWheel">モジュレーション</label><input type="range" id="modWheel" min="0" max="1" step=".01" value="0"><label for="bendRange">ベンド幅</label><select id="bendRange"></select></div>
 <div class="midi" role="group" aria-label="MIDI 入力"><span class="small">MIDI</span><button id="midiEnable">MIDI 機器を使う</button><select id="midiInput" aria-label="MIDI 入力機器" hidden></select><select id="midiChannel" aria-label="受信する MIDI チャンネル" hidden></select><i class="dot" id="midiDot" aria-hidden="true"></i><span id="midiStatus" role="status"></span></div></section>
 </div>
 <div class="files"><button id="store">音色を書き出す ↓</button><button id="recall">音色を読み込む ↑</button><input id="file" type="file" accept=".json,application/json" hidden><span id="edition"></span></div><p class="error" role="alert" id="error"></p>
@@ -126,6 +127,8 @@ function programSetup(program) {
 
 const tau = 2 * Math.PI;
 const sine = Float32Array.from({length:2049}, (_, i) => Math.sin(tau * i / 2048));
+// Mod wheel at full depth: ±VIBRATO_DEPTH semitones at VIBRATO_HZ. Wheel moves glide over about 4 ms.
+const VIBRATO_DEPTH = 0.5, VIBRATO_HZ = 5.5, GLIDE_SECONDS = 0.004;
 
 class PreviewEngine {
   constructor(rate) {
@@ -134,6 +137,27 @@ class PreviewEngine {
     this.serial = 0;
     this.focusTimbre = 0;
     this.taps = new Float32Array(128 * OPS);
+    this.bend = 0; this.vibrato = 0; this.bendNow = 0; this.vibratoNow = 0; this.lfo = 0;
+    this.glide = 1 - Math.exp(-1 / Math.max(1, GLIDE_SECONDS * rate));
+    this.pitch = new Float64Array(128);
+  }
+  // Pitch bend in semitones and mod wheel depth (0–1), shared by every voice.
+  setBend(semitones) { this.bend = Number.isFinite(semitones) ? Math.min(24, Math.max(-24, semitones)) : 0; }
+  setVibrato(amount) { this.vibrato = Number.isFinite(amount) ? Math.min(1, Math.max(0, amount)) : 0; }
+  advancePitch(length) {
+    const out = this.pitch.subarray(0, length);
+    if (!this.bend && !this.vibrato && !this.bendNow && !this.vibratoNow) return out.fill(1);
+    for (let n = 0; n < length; n++) {
+      this.bendNow += (this.bend - this.bendNow) * this.glide;
+      this.vibratoNow += (this.vibrato - this.vibratoNow) * this.glide;
+      if (Math.abs(this.bend - this.bendNow) < 1e-5) this.bendNow = this.bend;
+      if (Math.abs(this.vibrato - this.vibratoNow) < 1e-5) this.vibratoNow = this.vibrato;
+      const semitones = this.bendNow + this.vibratoNow * VIBRATO_DEPTH * Math.sin(tau * this.lfo);
+      this.lfo += VIBRATO_HZ / this.rate;
+      if (this.lfo >= 1) this.lfo -= 1;
+      out[n] = 2 ** (semitones / 12);
+    }
+    return out;
   }
   // setup: 16 timbres, each with its settings and a full Program.
   setup(timbres) { this.timbres = timbres; }
@@ -202,6 +226,7 @@ class PreviewEngine {
       this.focusTimbreShown = focus?.timbre ?? 0;
       if (!focus) this.taps.fill(0);
     }
+    const pitch = this.advancePitch(left.length);
     for (let slot=0; slot<this.slots.length; slot++) {
       const v=this.slots[slot];
       if (!v) continue;
@@ -228,8 +253,8 @@ class PreviewEngine {
           if(i===OPS-1) turns+=(v.recent+v.older)*v.feedback*2/tau;
           const position=(turns-Math.floor(turns))*2048, k=Math.floor(position);
           values[i]=(sine[k]+(sine[k+1]-sine[k])*(position-k))*o.env*o.level*v.velocity;
-          o.p+=o.step;
-          if(o.p>=1) o.p-=1;
+          o.p+=o.step*pitch[n];
+          if(o.p>=1) o.p-=Math.floor(o.p);
         }
         v.older=v.recent; v.recent=values[OPS-1];
         if (v === focus) this.taps.set(values, n * OPS);
@@ -266,6 +291,8 @@ class RustEngine {
   on(id,n,v) { this.wasm.note_on(id,n,v); }
   off(id) { this.wasm.note_off(id); }
   silence() { this.wasm.silence(); }
+  setBend(semitones) { this.wasm.pitch_bend(semitones); }
+  setVibrato(amount) { this.wasm.modulation(amount); }
   render(left, right, monitor) {
     const ptr = this.wasm.render(left.length, monitor ? 1 : 0);
     const memory = this.wasm.memory.buffer;
@@ -302,6 +329,8 @@ class FMProcessor extends AudioWorkletProcessor {
       if(m.type==="on") this.engine.on(m.id,m.note,m.velocity);
       if(m.type==="off") this.engine.off(m.id);
       if(m.type==="silence") this.engine.silence();
+      if(m.type==="bend") this.engine.setBend(m.semitones);
+      if(m.type==="modulation") this.engine.setVibrato(m.amount);
       if(m.type==="scope" && !this.frame) {
         this.frame = new Float32Array(m.buffer);
         this.written = 0;
@@ -943,11 +972,17 @@ function parseMidi(data) {
   if (type === 0x8 || type === 0x9) return {type:"off", channel, note:a};   // note on with velocity 0 is a note off
   if (type === 0xb) return {type:"cc", channel, controller:a, value:b};
   if (type === 0xc) return {type:"program", channel, program:a};
+  if (type === 0xe) {
+    // 14-bit value centred on 8192, scaled so both full throws reach exactly ±1.
+    const value = (b << 7 | a) - 8192;
+    return {type:"bend", channel, bend:value / (value < 0 ? 8192 : 8191)};
+  }
   return null;
 }
 
 // Tracks which MIDI keys are down and the sustain pedal, and calls the page:
-// strike(token, note, velocity 0–1), lift(token), silence() and program(number).
+// strike(token, note, velocity 0–1), lift(token), silence(), program(number),
+// bend(−1 to 1, 0 centred) and modulation(0–1, the mod wheel, CC1).
 // A token names one key on one channel of one input, so two keyboards never collide.
 class MidiRouter {
   constructor(page) {
@@ -969,6 +1004,10 @@ class MidiRouter {
     } else if (m.type === "off") {
       if (!this.sounding.has(token)) return m;
       if (this.pedal) this.sustained.add(token); else this.lift(token);
+    } else if (m.type === "bend") {
+      this.page.bend(m.bend);
+    } else if (m.type === "cc" && m.controller === 1) {
+      this.page.modulation(m.value / 127);
     } else if (m.type === "cc" && m.controller === 64) {
       this.pedal = m.value >= 64;
       if (!this.pedal) for (const t of [...this.sustained]) this.lift(t);
@@ -977,6 +1016,11 @@ class MidiRouter {
       this.sounding.clear();
       this.sustained.clear();
       this.page.silence();
+    } else if (m.type === "cc" && m.controller === 121) {
+      // Reset All Controllers: centre the wheels and lift the pedal. Keys stay down.
+      this.page.bend(0);
+      this.page.modulation(0);
+      this.receive([0xb0 | m.channel - 1, 64, 0], source);
     } else if (m.type === "cc" && m.controller === 123) {
       // All Notes Off: release every key, as if all were lifted with the pedal up.
       this.releaseAll();
@@ -1246,7 +1290,7 @@ async function prepare(){
       processor.port.onmessage=receiveScope;
       processor.connect(ctx.destination);node=processor;
       node.onprocessorerror=()=>{showError(Error("音源が停止しました。ページを開き直してください。"));$("status").textContent="音源停止";$("dot").classList.remove("on")};
-      sendSetup();$("dot").classList.add("on");$("status").textContent=Math.round(ctx.sampleRate/100)/10+" kHz · 演奏中";
+      sendSetup();sendWheels();$("dot").classList.add("on");$("status").textContent=Math.round(ctx.sampleRate/100)/10+" kHz · 演奏中";
       $("error").textContent="";
     } catch(e) {node=null;if(ctx && ctx.state!=="closed")await ctx.close();ctx=null;throw e}
   })();
@@ -1269,7 +1313,7 @@ function finishDemo(){
   for(const key of Array.from(held.keys()))if(key.startsWith("demo:"))lift(key);
   $("demo").setAttribute("aria-pressed","false");$("demo").textContent="▶ フレーズ試奏";
 }
-function panic(){epoch++;finishDemo();held.clear();midi.reset();send({type:"silence"});paintKeys()}
+function panic(){epoch++;finishDemo();held.clear();midi.reset();send({type:"silence"});setBend(0);setModulation(0);paintKeys()}
 $("stop").onclick=panic;
 for(let i=0;i<codes.length;i++){
   const b=el("button",codes[i].slice(-1));b.className="piano";b.setAttribute("aria-label",names[i]+" ("+codes[i].slice(-1)+")");
@@ -1295,8 +1339,29 @@ function releaseLocalKeys(){for(const token of Array.from(held.keys()))if(!token
 window.addEventListener("blur",releaseLocalKeys);
 document.addEventListener("visibilitychange",()=>{if(document.hidden)releaseLocalKeys()});
 
+// ---------- Pitch bend and mod wheel, from MIDI or the sliders. They act on every sounding voice.
+// The bend slider springs back to the centre when released, like a real pitch wheel.
+const wheels={bend:0,modulation:0};let bendDrag=false;
+for(const n of [1,2,3,5,7,12,24]){const o=el("option",n+" 半音");o.value=n;$("bendRange").append(o)}
+$("bendRange").value=2;
+function sendWheels(){send({type:"bend",semitones:wheels.bend*+$("bendRange").value});send({type:"modulation",amount:wheels.modulation})}
+function setBend(x){
+  wheels.bend=x;$("bendWheel").value=x;
+  const semitones=x*+$("bendRange").value;$("bendValue").value=(semitones>0?"+":"")+semitones.toFixed(1);
+  sendWheels();
+}
+function setModulation(x){wheels.modulation=x;$("modWheel").value=x;sendWheels()}
+$("bendWheel").oninput=e=>setBend(+e.target.value);
+$("modWheel").oninput=e=>setModulation(+e.target.value);
+$("bendRange").onchange=e=>{setBend(wheels.bend);e.target.blur()};
+$("bendWheel").onpointerdown=()=>{bendDrag=true};
+const springBack=()=>{if(bendDrag){bendDrag=false;setBend(0)}};
+window.addEventListener("pointerup",springBack);window.addEventListener("pointercancel",springBack);
+$("bendWheel").onblur=()=>setBend(0);
+
 // ---------- MIDI input (Web MIDI). Note on/off with velocity, sustain pedal (CC64),
-// All Sound Off (CC120), All Notes Off (CC123) and Program Change, which picks a preset in the current mode.
+// pitch bend, mod wheel (CC1), Reset All Controllers (CC121), All Sound Off (CC120),
+// All Notes Off (CC123) and Program Change, which picks a preset in the current mode.
 let midiAccess=null,midiBlink=0;
 const midi=new MidiRouter({
   strike(token,note,velocity){
@@ -1304,6 +1369,8 @@ const midi=new MidiRouter({
     strike(token,note,velocity);
   },
   lift,
+  bend:setBend,
+  modulation:setModulation,
   silence(){held.forEach((_,token)=>{if(token.startsWith("midi:"))held.delete(token)});send({type:"silence"});paintKeys()},
   program(n){
     const list=mode==="program"?BANK:COMBIS;if(!list[n])return;
