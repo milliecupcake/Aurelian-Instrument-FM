@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light"><title>Aurelian FM–6 ｜ FMシンセサイザー</title>
+<style>
+:root{--paper:#e7e5d9;--panel:#f1eee4;--line:#b7b9ab;--ink:#1d322e;--soft:#4d625a;--orange:#f09570;--dark:#203b34;--mono:"IBM Plex Mono","SFMono-Regular",Consolas,monospace;--sans:"Inter","Hiragino Sans","Yu Gothic",system-ui,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:#d2d5c8;color:var(--ink);font:14px var(--sans);min-height:100vh}button,select,input{font:inherit;color:inherit}button,select{cursor:pointer}button:focus-visible,select:focus-visible,input:focus-visible{outline:3px solid #cc562c;outline-offset:3px}button:disabled{cursor:default;opacity:.5}button{border:1px solid var(--line);background:var(--panel);border-radius:4px;font-weight:650}
+main{max-width:1140px;margin:0 auto;padding:22px 32px 24px}
+.mast,.title,.row,.section-title,.editor-head,.key-head,.key-controls,.identity,.transport{display:flex;align-items:center}.mast,.title,.section-title,.editor-head,.key-head{justify-content:space-between}.mast{border-bottom:1px solid #9da899;padding-bottom:12px;font:600 11px var(--mono);letter-spacing:.14em}.identity{gap:10px}.mark{display:flex;align-items:center;gap:3px;height:18px}.mark i{width:3px;background:var(--ink);transform:skew(-13deg)}.mark i:nth-child(1){height:7px}.mark i:nth-child(2){height:15px}.mark i:nth-child(3){height:21px}.mark i:nth-child(4){height:11px}.mark i:nth-child(5){height:6px}.status{display:flex;align-items:center;gap:8px;letter-spacing:.03em}.dot{width:8px;height:8px;border-radius:50%;background:#829082}.dot.on{background:#477958;box-shadow:0 0 0 3px #47795824}
+.title{padding:18px 0 16px;gap:16px}.title h1{font:800 clamp(44px,6vw,72px)/.9 var(--sans);letter-spacing:-.085em;margin:0}.title h1 span{color:#9e492d}.headline{display:flex;align-items:center;gap:24px}.descriptor{font:600 13px/1.35 var(--mono);letter-spacing:.025em;border-left:1px solid #94a095;padding-left:18px}.title .device{font:11px var(--mono);color:var(--soft)}
+.deck{background:var(--paper);border:1px solid #a4ab9d;border-radius:11px;box-shadow:0 5px 0 #a8ad9f,0 14px 26px #24352c16;padding:15px;display:grid;gap:12px}.top-grid{display:grid;grid-template-columns:1.1fr 1fr;gap:12px}
+.screen{background:var(--dark);color:#e6edc9;border:1px solid #112921;border-radius:6px;padding:18px 20px 15px;position:relative;overflow:hidden}.small{font:600 10px/1.25 var(--mono);letter-spacing:.13em;text-transform:uppercase}.screen .small{color:#adc4ad}.screen-top,.screen-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}.screen-top .patch-index{color:#bdcdb4;font:11px var(--mono)}.preset-select{position:relative;margin:9px 0 5px}.preset-select:after{content:"⌄";position:absolute;right:3px;top:20%;pointer-events:none;font:24px var(--mono);color:#aec2a7}select#preset{width:100%;height:51px;text-overflow:ellipsis;appearance:none;background:none;border:0;border-bottom:1px solid #6c8271;color:#f5f2d8;font:bold clamp(24px,3vw,40px)/1.05 var(--sans);letter-spacing:-.045em;padding:0 28px 4px 0}select option{color:#1d322e;background:#f1eee4;font-size:16px}canvas{display:block;width:100%;height:43px;margin:9px 0 11px}.screen-foot{justify-content:flex-start;gap:7px}.screen-foot button{height:34px;padding:0 13px;border-color:#79907c;background:transparent;color:#e0e8d3;font-size:12px}.screen-foot .play{background:#e1e9ca;border-color:#e1e9ca;color:var(--ink)}.screen-foot .play[aria-pressed=true]{background:var(--orange);border-color:var(--orange)}
+.module{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:15px 17px}.section-title h2,.editor-head h2,.key-head h2{font:700 17px/1.25 var(--sans);margin:0;letter-spacing:-.02em}.section-title .small,.editor-head .small,.key-head .small{color:#53695e;margin-left:8px;letter-spacing:.08em}.algo{display:flex;gap:3px}.algo button{min-width:33px;height:28px;font:600 12px var(--mono)}button.selected{color:#f3f3e4;background:var(--ink);border-color:var(--ink)}
+.routing{height:103px;display:flex;align-items:stretch;justify-content:center;margin:6px 0 3px}.stack{min-width:39px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative;border-bottom:2px solid #859a86;padding:0 5px}.stack:first-child{border-bottom-left-radius:2px}.stack:last-child{border-bottom-right-radius:2px}.node{height:19px;min-width:27px;font:600 11px var(--mono);border:1px solid #a5af9e;background:#e0e5d4;border-radius:2px;position:relative;z-index:1;padding:0 3px}.node.car{background:#364d40;color:#eef0dc;border-color:#364d40}.node[aria-pressed=true]{outline:2px solid #c16a46;outline-offset:0px}.connector{height:5px;background:#8d9c8d;width:1px}.node.fb:after{content:"↺";position:absolute;left:calc(100% + 3px);top:1px;color:#646e61;font:13px var(--sans)}.route-foot{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-top:11px}.route-foot label,.gain-control{font-size:12px;font-weight:600}.route-foot input{width:90px}.route-foot output{min-width:28px;font:11px var(--mono)}.route-foot .out{margin-left:auto;text-align:right;font:10px var(--mono);color:#53695e}
+.edit-tabs{display:flex;gap:4px}.edit-tabs button{font:600 11px var(--mono);min-width:42px;height:27px}.editor-head{gap:8px;flex-wrap:wrap}.role{font:600 11px var(--mono);color:#80513c;margin-left:9px}.params{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));margin:17px 0 0}.param{border-left:1px solid #c7ccbc;padding:0 13px;min-width:0}.param:first-child{border-left:0;padding-left:0}.param:last-child{padding-right:0}.param label{font:600 12px var(--mono);display:block;color:#4b6256}.param output{display:block;font:650 19px/1.4 var(--mono);letter-spacing:-.05em}.param input{width:100%;margin:5px 0 1px}input[type=range]{accent-color:#486654;height:17px;cursor:pointer}.edit-foot{margin:12px 0 0;color:var(--soft);font-size:11px}
+.key-head{gap:12px;flex-wrap:wrap}.key-controls{gap:10px;font-size:12px}.key-controls button{height:27px;min-width:27px}.key-controls output{font:650 12px var(--mono)}.gain-control{margin-left:9px}.key-controls input{width:80px}.keys{height:118px;position:relative;background:#273c34;display:flex;gap:2px;padding:3px;border-radius:4px;margin-top:11px;touch-action:none;user-select:none}.piano{position:relative;flex:1;background:linear-gradient(#ebece2,#fffdf2 33%,#f5f3e8 93%,#d6d5c9 94%);border-radius:0 0 4px 4px;border:1px solid #b5b6a8;display:flex;justify-content:center;align-items:flex-end;padding-bottom:10px;font:600 11px var(--mono);color:#58675c;touch-action:none}.piano.black{position:absolute;z-index:1;top:3px;width:7.8%;height:65%;transform:translateX(-50%);background:linear-gradient(#263830,#35463b 80%,#23332b 86%);color:#e1e3d3;border:1px solid #1c2d25;box-shadow:1px 2px 2px #1c2d2533;padding-bottom:7px}.piano.down{background:#e9aa81!important;color:#322f22;border-color:#a76f4f}.piano small{font:9px var(--mono);margin-left:4px;color:#6c7d70}.key-foot{display:flex;justify-content:space-between;gap:15px;color:var(--soft);font-size:11px;margin-top:9px}.error{color:#922f24;min-height:0;margin:0}.error:not(:empty){margin:12px 0}.files{margin-top:15px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}.files button{border:0;background:transparent;text-decoration:underline;text-underline-offset:3px;padding:1px 0;color:#4e6359;font-size:12px}.files span{margin-left:auto;color:#4e6359;font:10px var(--mono)}
+@media(max-width:760px){main{padding:15px 12px 22px}.top-grid{grid-template-columns:1fr 1fr}.module,.screen{padding:12px}.deck{padding:9px}.descriptor{font-size:10px}.title .device{display:none}.params{grid-template-columns:repeat(3,1fr);row-gap:14px}.param:nth-child(4){border:0;padding-left:0}.edit-tabs button{min-width:34px}.screen-foot button{padding:0 7px}}
+@media(max-width:580px){.top-grid{grid-template-columns:1fr}.title{padding:16px 4px}.screen canvas{height:34px}.routing{height:101px}.editor-head{align-items:flex-start;flex-direction:column}.role{font-size:10px}.keys{height:102px}.key-head .small{display:none}.key-controls{gap:5px}.key-controls input{width:53px}.key-foot{display:block}.files span{width:100%;margin:0}.piano small{display:none}.mast{font-size:9px}.section-title .small{font-size:9px}}
+
+.screen{display:flex;flex-direction:column;justify-content:space-between;gap:10px}
+.monitor{padding:14px 16px;background:#172e29;color:#e2e7cf;border-color:#11251f}
+.monitor-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px 15px;margin-bottom:12px}
+.monitor-head h2{font:700 17px/1.25 var(--sans);margin:0}.monitor-tools{display:flex;align-items:center;gap:12px;color:#c7d5c4;font-size:11px}
+.monitor-tools select{margin-left:4px;border:1px solid #577163;border-radius:3px;background:#233d34;color:#e2e7cf;padding:2px 3px;font:600 11px var(--mono)}
+.monitor-note{color:#cfdfb3;font:600 12px var(--mono)}
+.scope-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.55fr);gap:7px}
+.trace{min-width:0;margin:0;padding:8px 9px 5px;background:#203a32;border:1px solid #3f584a;border-radius:4px}
+.trace figcaption{display:flex;align-items:baseline;justify-content:space-between;gap:4px;flex-wrap:wrap}
+.trace-name{font:650 12px var(--mono);color:#dbedaf}.trace.modulator .trace-name{color:#f0b58b}
+.trace-kind{font-size:10px;color:#b8c9b8}.trace canvas{width:100%;height:39px;margin:4px 0 0;display:block}
+.trace.master{grid-column:4;grid-row:1 / 3;display:flex;flex-direction:column;border-color:#72816a;background:#294238}
+.master .trace-name{font:700 14px var(--sans);color:#fff0c9}.master canvas{flex:1;height:60px;min-height:0}
+.monitor-caption{margin:9px 0 0;color:#c0d0be;font-size:11px;line-height:1.5}
+@media(max-width:760px){.scope-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.trace.master{grid-column:1/-1;grid-row:auto}.master canvas{flex:none;height:54px}.monitor{padding:12px}}
+@media(max-width:480px){.scope-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.monitor-tools{gap:8px}.monitor-head{align-items:flex-start}.trace{padding:6px}.trace canvas{height:36px}.master canvas{height:50px}}
+</style></head><body><main>
+<div class="mast"><div class="identity"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>AURELIAN INSTRUMENTS</div><div class="status" role="status"><i class="dot" id="dot"></i><span id="status">音源待機中</span></div></div>
+<div class="title"><div class="headline"><h1>FM<span>–</span>6</h1><div class="descriptor">Phase Modulation<br>Synthesizer</div></div><div class="device">6 OPERATORS &nbsp;/&nbsp; 16 VOICES</div></div>
+<div class="deck">
+<div class="top-grid">
+<section class="screen" aria-label="音色と演奏"><div class="screen-top"><span class="small">Voice memory</span><span class="patch-index" id="patchIndex"></span></div>
+<div class="preset-select"><select id="preset" aria-label="プリセット音色"></select></div>
+<div class="screen-foot"><button id="demo" class="play" aria-pressed="false">▶ フレーズ試奏</button><button id="stop">全音停止</button></div></section>
+<section class="module"><div class="section-title"><h2>接続 <span class="small">Algorithm</span></h2><div class="algo" id="algorithms" aria-label="アルゴリズム"></div></div><div class="routing" id="routing" aria-label="オペレーター接続図。上から下へ変調"></div>
+<div class="route-foot"><label for="feedback">OP6 Feedback</label><input type="range" id="feedback" min="0" max="1" step=".01"><output id="fbVal" for="feedback"></output><span class="out" id="carriers"></span></div></section>
+</div>
+<section class="module monitor" aria-labelledby="scope-heading">
+<div class="monitor-head"><h2 id="scope-heading">波形モニター</h2><div class="monitor-tools"><span class="monitor-note" id="scope-note">表示音 —</span><span>横幅 12 ms</span><label>縦倍率<select id="scope-zoom"><option value="1">×1</option><option value="2">×2</option><option value="4">×4</option></select></label></div></div>
+<div class="scope-grid" id="scope-grid"></div>
+<p class="monitor-caption">OP1〜6 は最後に押した鍵の波形。最終出力には和音とリリース中の余韻も含まれます。</p>
+</section>
+<section class="module"><div class="editor-head"><h2>音色編集 <span class="role" id="role"></span></h2><div class="edit-tabs" id="operators" aria-label="編集するオペレーター"></div></div><div class="params" id="params"></div><p class="edit-foot" id="editHint"></p></section>
+<section class="module"><div class="key-head"><h2>鍵盤 <span class="small">Keyboard</span></h2><div class="key-controls"><span>Oct</span><button id="octDown" aria-label="1オクターブ下げる">−</button><output id="octave"></output><button id="octUp" aria-label="1オクターブ上げる">＋</button><label for="gain" class="gain-control">音量</label><input type="range" id="gain" min="0" max="1" step=".01" value=".65"></div></div><div id="keys" class="keys" aria-label="演奏鍵盤"></div><div class="key-foot"><span>A〜K で演奏 ／ W・E・T・Y・U が黒鍵</span><span>Shift で強く弾く</span></div></section>
+</div>
+<div class="files"><button id="store">音色を書き出す ↓</button><button id="recall">音色を読み込む ↑</button><input id="file" type="file" accept=".json,application/json" hidden><span id="edition"></span></div><p class="error" role="alert" id="error"></p>
+</main>
+<script type="text/plain" id="processor">__WORKLET__</script>
+<script>
+"use strict";
+const WASM="__WASM_BASE64__";
+const BANK=__PATCHES__;
+const $=id=>document.getElementById(id);
+const clone=o=>JSON.parse(JSON.stringify(o));
+const el=(s,t)=>{const n=document.createElement(s);n.textContent=t;return n};
+const routes={1:[[2,1],[6,5,4,3]],5:[[2,1],[4,3],[6,5]],32:[[1],[2],[3],[4],[5],[6]]};
+const controls=[
+  ["Ratio","×",0.25,16,.001],["Level","",0,1,.01],["Attack","s",.002,4,.001],
+  ["Decay","s",.01,5,.01],["Sustain","",0,1,.01],["Release","s",.01,4,.01]
+];
+const codes=["KeyA","KeyW","KeyS","KeyE","KeyD","KeyF","KeyT","KeyG","KeyY","KeyH","KeyU","KeyJ","KeyK"];
+const names=["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B","C"];
+const blacks=new Map([[1,1],[3,2],[6,4],[8,5],[10,6]]);
+let patch=clone(BANK[0]), selected=1, bankIndex=0, modified=false, octave=4;
+let ctx, node, volumeParam, startup, moduleCache, nextId=1, epoch=0;
+let demoTimers=[], demoActive=false;
+const held=new Map();
+const keyElements=[];
+const paramElements=[];
+function send(msg){if(node)node.port.postMessage(msg)}
+function changed(){
+  modified=true; send({type:"patch",patch});
+  $("patchIndex").textContent="EDITED";
+}
+function displayValue(j,value){
+  if(j===0) return Number(value.toFixed(3))+" ×";
+  if(j===1||j===4) return Math.round(value*100)+" %";
+  return value<.1 ? Math.round(value*1000)+" ms" : Number(value.toFixed(2))+" s";
+}
+function redrawEditor(){
+  const stacks=routes[patch.algorithm], carriers=stacks.map(stack=>stack[stack.length-1]);
+  const isCarrier=carriers.includes(selected+1);
+  $("role").textContent="OP"+(selected+1)+" / "+(isCarrier?"キャリア":"モジュレーター");
+  $("editHint").textContent=(isCarrier?"Level で、このオペレーターの音量が変わります。":"Level で、下につながるオペレーターの倍音が変わります。")+" 編集は次の打鍵から反映されます。";
+  $("carriers").textContent="OUT · "+carriers.map(n=>"OP"+n).join(" + ");
+  $("operators").replaceChildren();
+  for(let i=0;i<6;i++){
+    const b=el("button","OP"+(i+1));b.classList.toggle("selected",selected===i);b.setAttribute("aria-pressed",selected===i);
+    b.onclick=()=>{selected=i;redrawEditor()};$("operators").append(b);
+  }
+  $("algorithms").replaceChildren();
+  for(const num of [1,5,32]){
+    const b=el("button",String(num).padStart(2,"0"));b.classList.toggle("selected",patch.algorithm===num);
+    b.setAttribute("aria-label","アルゴリズム "+num);b.setAttribute("aria-pressed",num===patch.algorithm);
+    b.onclick=()=>{patch.algorithm=num;changed();redrawEditor()};$("algorithms").append(b);
+  }
+  $("routing").replaceChildren();
+  for(const stack of stacks){
+    const column=el("div","");column.className="stack";
+    for(const n of stack){
+      const b=el("button",n);b.className="node"+(carriers.includes(n)?" car":"")+(n===6?" fb":"");
+      b.setAttribute("aria-label","OP"+n+" を編集");b.setAttribute("aria-pressed",n===selected+1);
+      b.onclick=()=>{selected=n-1;redrawEditor()};column.append(b);
+      const bar=el("i","");bar.className="connector";column.append(bar);
+    }
+    $("routing").append(column);
+  }
+  paramElements.forEach(({range,out},j)=>{range.value=patch.operators[selected][j];out.value=displayValue(j,Number(range.value))});
+  $("feedback").value=patch.feedback;$("fbVal").value=Math.round(patch.feedback*100)+"%";
+}
+controls.forEach(([label,unit,min,max,step],j)=>{
+  const wrap=el("div","");wrap.className="param";const cap=el("label",label);cap.htmlFor="p"+j;
+  const range=document.createElement("input");Object.assign(range,{type:"range",id:"p"+j,min,max,step});
+  const out=document.createElement("output");out.setAttribute("for",range.id);
+  range.oninput=()=>{patch.operators[selected][j]=+range.value;out.value=displayValue(j,+range.value);changed()};
+  wrap.append(cap,out,range);$("params").append(wrap);paramElements.push({range,out});
+});
+$("feedback").oninput=e=>{patch.feedback=+e.target.value;$("fbVal").value=Math.round(patch.feedback*100)+"%";changed()};
+BANK.forEach((p,i)=>{const o=el("option",p.name);o.value=i;$("preset").append(o)});
+function loadPatch(p,i){
+  patch=clone(p);bankIndex=i;modified=false;
+  $("preset").value=String(i);$("patchIndex").textContent=i===-1?"USER":String(i+1).padStart(2,"0")+" / 04";
+  send({type:"patch",patch});redrawEditor();
+}
+$("preset").onchange=e=>{const i=+e.target.value;loadPatch(i===-1?imported:BANK[i],i);e.target.blur()};
+$("edition").textContent=WASM?"RUST / WEBASSEMBLY":"試奏版 / JAVASCRIPT";
+function showError(e){$("error").textContent=e.message || String(e)}
+async function prepare(){
+  if(node){if(ctx.state!=="running") await ctx.resume();return}
+  if(startup)return startup;
+  startup=(async()=>{
+    try {
+      if(!window.AudioContext)throw Error("Web Audio 対応のPCブラウザーで開いてください。");
+      ctx=new AudioContext({latencyHint:"interactive"});
+      await ctx.resume();
+      if(!ctx.audioWorklet)throw Error("ファイルで音源を起動できません。README の localhost での開き方をお試しください。");
+      if(WASM && !moduleCache){
+        const bytes=Uint8Array.from(atob(WASM),c=>c.charCodeAt(0));
+        moduleCache=await WebAssembly.compile(bytes);
+      }
+      const blob=new Blob([$("processor").textContent],{type:"text/javascript"}),url=URL.createObjectURL(blob);
+      try {await ctx.audioWorklet.addModule(url)} finally {URL.revokeObjectURL(url)}
+      const processor=new AudioWorkletNode(ctx,"aurelian-fm6",{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[1],parameterData:{volume:+$("gain").value},processorOptions:{module:moduleCache,patch}});
+      await new Promise((resolve,reject)=>{
+        const deadline=setTimeout(()=>reject(Error("音源が応答しません。ページを開き直してお試しください。")),5000);
+        processor.port.onmessage=e=>{if(e.data==="ready"){clearTimeout(deadline);resolve()}};
+        processor.onprocessorerror=()=>{clearTimeout(deadline);reject(Error("音源の初期化に失敗しました。"))};
+      });
+      volumeParam=processor.parameters.get("volume");volumeParam.value=+$("gain").value;
+      processor.port.onmessage=receiveScope;
+      processor.connect(ctx.destination);node=processor;
+      node.onprocessorerror=()=>{showError(Error("音源が停止しました。ページを開き直してください。"));$("status").textContent="音源停止";$("dot").classList.remove("on")};
+      send({type:"patch",patch});$("dot").classList.add("on");$("status").textContent=Math.round(ctx.sampleRate/100)/10+" kHz · 演奏中";
+      $("error").textContent="";
+    } catch(e) {node=null;if(ctx && ctx.state!=="closed")await ctx.close();ctx=null;throw e}
+  })();
+  try {await startup} finally {startup=null}
+}
+$("gain").oninput=()=>{if(volumeParam)volumeParam.setTargetAtTime(+$("gain").value,ctx.currentTime,.012)};
+function paintKeys(){const notes=new Set(Array.from(held.values(),v=>v.note));keyElements.forEach((b,i)=>b.classList.toggle("down",notes.has((octave+1)*12+i)))}
+async function strike(token,note,velocity){
+  if(held.has(token))return;
+  const v={id:nextId++,note};held.set(token,v);paintKeys();
+  try{await prepare();if(held.get(token)===v)send({type:"on",id:v.id,note,velocity})}
+  catch(e){if(held.get(token)===v)held.delete(token);paintKeys();showError(e)}
+}
+function lift(token){
+  const v=held.get(token);if(!v)return;
+  send({type:"off",id:v.id});held.delete(token);paintKeys();
+}
+function finishDemo(){
+  demoTimers.forEach(clearTimeout);demoTimers=[];demoActive=false;
+  for(const key of Array.from(held.keys()))if(key.startsWith("demo:"))lift(key);
+  $("demo").setAttribute("aria-pressed","false");$("demo").textContent="▶ フレーズ試奏";
+}
+function panic(){epoch++;finishDemo();held.clear();send({type:"silence"});paintKeys()}
+$("stop").onclick=panic;
+for(let i=0;i<codes.length;i++){
+  const b=el("button",codes[i].slice(-1));b.className="piano";b.setAttribute("aria-label",names[i]+" ("+codes[i].slice(-1)+")");
+  if(blacks.has(i)){b.classList.add("black");b.style.left="calc(3px + (100% - 6px) * "+blacks.get(i)/8+")"}
+  else if(i===0||i===12)b.append(el("small","C"));
+  b.onpointerdown=e=>{e.preventDefault();b.setPointerCapture(e.pointerId);strike("ptr:"+e.pointerId,(octave+1)*12+i,e.shiftKey ? .98 : .72)};
+  b.onpointerup=b.onpointercancel=b.onlostpointercapture=e=>lift("ptr:"+e.pointerId);
+  b.onclick=e=>{if(e.detail===0){const token="access:"+i;strike(token,(octave+1)*12+i,.72);setTimeout(()=>lift(token),360)}};
+  $("keys").append(b);keyElements.push(b);
+}
+function setOct(n){octave=Math.min(7,Math.max(1,n));$("octave").value="C"+octave;$("octDown").disabled=octave===1;$("octUp").disabled=octave===7;paintKeys()}
+$("octDown").onclick=()=>setOct(octave-1);$("octUp").onclick=()=>setOct(octave+1);
+window.addEventListener("keydown",e=>{
+  if(e.code==="Escape"){panic();return}
+  if(e.ctrlKey||e.metaKey||e.altKey||e.isComposing||e.target.tagName==="SELECT")return;
+  const i=codes.indexOf(e.code);if(i<0)return;e.preventDefault();
+  if(!e.repeat)strike(e.code,(octave+1)*12+i,e.shiftKey ? .98 : .72);
+});
+window.addEventListener("keyup",e=>lift(e.code));
+window.addEventListener("blur",panic);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)panic()});
+const phrase=[
+  [0,60,.82,.72],[0,64,.82,.65],[0,67,.82,.65],[0,71,.82,.59],
+  [1,74,.39,.83],[1.5,71,.38,.68],[2,67,.83,.73],
+  [3,57,.86,.78],[3,60,.86,.65],[3,64,.86,.65],[3,67,.86,.59],
+  [4,71,.4,.85],[4.5,69,.4,.67],[5,64,1.28,.76]
+];
+$("demo").onclick=async()=>{
+  if(demoActive){epoch++;finishDemo();return}
+  const token=++epoch;demoActive=true;$("demo").setAttribute("aria-pressed","true");$("demo").textContent="■ 試奏を停止";
+  try {await prepare();if(token!==epoch)return;
+    const beat=455;
+    phrase.forEach(([start,note,duration,velocity],i)=>{
+      const key="demo:"+i;
+      demoTimers.push(setTimeout(()=>strike(key,note,velocity),start*beat),setTimeout(()=>lift(key),(start+duration)*beat));
+    });
+    demoTimers.push(setTimeout(finishDemo,6.35*beat));
+  }catch(e){finishDemo();showError(e)}
+};
+let imported;
+function validate(p){
+  if(!p || typeof p.name!=="string" || !p.name.trim() || p.name.length>64 ||
+    ![1,5,32].includes(p.algorithm) || !Number.isFinite(p.feedback) || p.feedback<0 || p.feedback>1 ||
+    !Array.isArray(p.operators) || p.operators.length!==6 ||
+    !p.operators.every(op=>Array.isArray(op)&&op.length===6&&op.every((v,j)=>Number.isFinite(v)&&v>=controls[j][2]&&v<=controls[j][3])))
+    throw Error("FM–6 の音色ファイルを選んでください。");
+}
+$("store").onclick=()=>{
+  const data=clone(patch);
+  if(modified && !data.name.endsWith(" Edit"))data.name=data.name.slice(0,59)+" Edit";
+  const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));
+  const a=el("a","");a.href=url;a.download=data.name.replace(/[^\p{L}\p{N}_-]+/gu,"-")+".fm6.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+$("recall").onclick=()=>$("file").click();
+$("file").onchange=async e=>{
+  try{const f=e.target.files[0];if(!f)return;if(f.size>32768)throw Error("音色ファイルが大きすぎます。");
+    const p=JSON.parse(await f.text());validate(p);imported=p;
+    let opt=$("preset").querySelector('option[value="-1"]');if(!opt){opt=el("option","");opt.value=-1;$("preset").append(opt)}opt.textContent=p.name;
+    loadPatch(p,-1);$("error").textContent="";
+  }catch(e){showError(e)}finally{$("file").value=""}
+};
+const traces=[];
+for (let index=0; index<7; index++) {
+  const master=index===6;
+  const figure=el("figure","");figure.className=master?"trace master":"trace";
+  const caption=el("figcaption",""),title=el("span",master?"最終出力":"OP "+(index+1));
+  title.className="trace-name";
+  const kind=el("span",master?"全ボイス・音量適用後":"");kind.className="trace-kind";
+  const canvas=el("canvas","");canvas.setAttribute("role","img");
+  canvas.setAttribute("aria-label",master?"全ボイスの最終出力波形":"OP"+(index+1)+" の出力波形");
+  caption.append(title,kind);figure.append(caption,canvas);$("scope-grid").append(figure);
+  traces.push({figure,kind,canvas,g:canvas.getContext("2d"),color:"#dbedaf"});
+}
+let displayFrame=null, spareBuffer=null, scopePending=false, lastDraw=-Infinity;
+let labelAlgorithm=-1, lastNoteLabel="", scopeDirty=true;
+function receiveScope(event) {
+  const m=event.data;
+  if(m.type!=="scope")return;
+  // The previous frame stays readable while the next buffer is on the audio thread.
+  if(displayFrame)spareBuffer=displayFrame.data.buffer;
+  displayFrame={data:new Float32Array(m.buffer),note:m.note,algorithm:m.algorithm};
+  scopePending=false;scopeDirty=true;
+}
+function updateScopeLabels(algorithm,note) {
+  const sounding=algorithm!==0;
+  const label=sounding?"表示音 "+names[note%12]+(Math.floor(note/12)-1):"表示音 —";
+  if(label!==lastNoteLabel){$("scope-note").textContent=label;lastNoteLabel=label}
+  const shown=sounding?algorithm:patch.algorithm;
+  if(labelAlgorithm===shown)return;
+  labelAlgorithm=shown;scopeDirty=true;
+  const carriers=routes[shown].map(stack=>stack[stack.length-1]);
+  for(let op=0;op<6;op++) {
+    const carrier=carriers.includes(op+1),trace=traces[op];
+    trace.kind.textContent=carrier?"キャリア":"モジュレーター";
+    trace.figure.classList.toggle("modulator",!carrier);
+    trace.color=carrier?"#cee79b":"#f1b486";
+  }
+  traces[6].color="#ffe6b1";
+}
+// Choose one rising zero crossing for all seven traces, so their relative
+// phases and time positions remain comparable. A muted master uses an OP.
+function trigger(data,visible) {
+  if(!data)return 0;
+  const limit=data.length/7-visible;
+  let channel=6,largest=0;
+  for(let op=6;op>=0;op--){
+    let peak=0;
+    for(let i=0;i<=limit;i++)peak=Math.max(peak,Math.abs(data[i*7+op]));
+    if(peak>largest){largest=peak;channel=op}
+    if(op===6 && peak>0.002)break;
+  }
+  for(let i=1;i<=limit;i++){
+    if(data[(i-1)*7+channel]<=0 && data[i*7+channel]>0)return i;
+  }
+  return 0;
+}
+function paintTrace(trace,channel,data,start,count,zoom) {
+  const {canvas,g}=trace;
+  const dpr=Math.min(devicePixelRatio,2);
+  const w=Math.max(1,Math.round(canvas.clientWidth*dpr)),h=Math.max(1,Math.round(canvas.clientHeight*dpr));
+  if(canvas.width!==w)canvas.width=w;if(canvas.height!==h)canvas.height=h;
+  g.clearRect(0,0,w,h);g.strokeStyle="#40594d";g.lineWidth=dpr*.65;g.beginPath();
+  for(let k=1;k<6;k++){const x=w*k/6;g.moveTo(x,0);g.lineTo(x,h)}
+  for(let k=1;k<4;k++){const y=h*k/4;g.moveTo(0,y);g.lineTo(w,y)}
+  g.stroke();g.strokeStyle=trace.color;g.lineWidth=1.35*dpr;g.beginPath();
+  if(!data){g.moveTo(0,h/2);g.lineTo(w,h/2)}
+  else for(let i=0;i<count;i++){
+    const value=data[(start+i)*7+channel];
+    const x=w*i/(count-1),y=h*(.5-.48*value*zoom);
+    if(i===0)g.moveTo(x,y);else g.lineTo(x,y);
+  }
+  g.stroke();
+}
+function draw(now=0) {
+  const algorithm=displayFrame?.algorithm??0;
+  updateScopeLabels(algorithm,displayFrame?.note??0);
+  if(now-lastDraw>=1000/30){
+    const visible=Math.max(2,Math.round((ctx?.sampleRate??48000)*.012));
+    if(scopeDirty){
+      const data=displayFrame?.data,start=trigger(data,visible),zoom=Number($("scope-zoom").value)||1;
+      traces.forEach((trace,channel)=>paintTrace(trace,channel,data,start,visible,zoom));
+      scopeDirty=false;
+    }
+    if(node && !scopePending && ctx.state==="running" && !document.hidden){
+      const buffer=spareBuffer??new ArrayBuffer(visible*2*7*4);
+      spareBuffer=null;scopePending=true;
+      node.port.postMessage({type:"scope",buffer},[buffer]);
+    }
+    lastDraw=now;
+  }
+  requestAnimationFrame(draw);
+}
+$("scope-zoom").onchange=e=>{scopeDirty=true;e.target.blur()};
+window.addEventListener("resize",()=>{scopeDirty=true});
+setOct(4);loadPatch(BANK[0],0);draw();
+</script></body></html>
