@@ -18,6 +18,7 @@ main{max-width:1140px;margin:0 auto;padding:22px 32px 24px}
 
 .screen{display:flex;flex-direction:column;justify-content:space-between;gap:10px}
 .algo{align-items:center}.algo select{height:28px;border:1px solid var(--line);border-radius:4px;background:var(--panel);font:600 12px var(--mono);padding:0 4px}.algo button{min-width:28px}
+.screen-foot{flex-wrap:wrap}.screen-foot select{flex:1 1 130px;height:34px;min-width:0;max-width:100%;border:1px solid #79907c;border-radius:4px;background:transparent;color:#e0e8d3;font-size:12px;padding:0 6px}
 .routing{display:block;position:relative;height:auto;margin:8px 0 3px}.routing svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}.routing path{fill:none;stroke:#8d9c8d;stroke-width:1}.routing path.bus{stroke:#859a86;stroke-width:2}.routing .node{position:absolute;transform:translate(-50%,-50%)}
 .monitor{padding:14px 16px;background:#172e29;color:#e2e7cf;border-color:#11251f}
 .monitor-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px 15px;margin-bottom:12px}
@@ -41,7 +42,7 @@ main{max-width:1140px;margin:0 auto;padding:22px 32px 24px}
 <div class="top-grid">
 <section class="screen" aria-label="音色と演奏"><div class="screen-top"><span class="small">Voice memory</span><span class="patch-index" id="patchIndex"></span></div>
 <div class="preset-select"><select id="preset" aria-label="プリセット音色"></select></div>
-<div class="screen-foot"><button id="demo" class="play" aria-pressed="false">▶ フレーズ試奏</button><button id="stop">全音停止</button></div></section>
+<div class="screen-foot"><button id="demo" class="play" aria-pressed="false">▶ フレーズ試奏</button><button id="stop">全音停止</button><select id="phrase" aria-label="試奏する曲"></select></div></section>
 <section class="module"><div class="section-title"><h2>接続 <span class="small">Algorithm</span></h2><div class="algo"><button id="algoPrev" aria-label="前のアルゴリズム">‹</button><select id="algorithm" aria-label="アルゴリズム番号"></select><button id="algoNext" aria-label="次のアルゴリズム">›</button></div></div><div class="routing" id="routing" aria-label="オペレーター接続図。上から下へ変調"></div>
 <div class="route-foot"><label for="feedback">OP8 Feedback</label><input type="range" id="feedback" min="0" max="1" step=".01"><output id="fbVal" for="feedback"></output><span class="out" id="carriers"></span></div></section>
 </div>
@@ -484,7 +485,7 @@ BANK.forEach((p,i)=>{const o=el("option",p.name);o.value=i;$("preset").append(o)
 function loadPatch(p,i){
   patch=clone(p);bankIndex=i;modified=false;
   $("preset").value=String(i);$("patchIndex").textContent=i===-1?"USER":String(i+1).padStart(2,"0")+" / "+String(BANK.length).padStart(2,"0");
-  send({type:"patch",patch});redrawEditor();
+  suitPhrase(patch.name);send({type:"patch",patch});redrawEditor();
 }
 $("preset").onchange=e=>{const i=+e.target.value;loadPatch(i===-1?imported:BANK[i],i);e.target.blur()};
 $("edition").textContent=WASM?"RUST / WEBASSEMBLY":"試奏版 / JAVASCRIPT";
@@ -559,22 +560,75 @@ window.addEventListener("keydown",e=>{
 window.addEventListener("keyup",e=>lift(e.code));
 window.addEventListener("blur",panic);
 document.addEventListener("visibilitychange",()=>{if(document.hidden)panic()});
-const phrase=[
-  [0,60,.82,.72],[0,64,.82,.65],[0,67,.82,.65],[0,71,.82,.59],
-  [1,74,.39,.83],[1.5,71,.38,.68],[2,67,.83,.73],
-  [3,57,.86,.78],[3,60,.86,.65],[3,64,.86,.65],[3,67,.86,.59],
-  [4,71,.4,.85],[4.5,69,.4,.67],[5,64,1.28,.76]
-];
+// Short original phrases in web/phrases.json. Each entry is [start beat, MIDI note, length in beats, velocity].
+const PHRASES=[
+  {
+    "name":"コードとメロディー","suits":["Transit EP"],"beat":455,
+    "notes":[
+      [0,60,0.82,0.72],[0,64,0.82,0.65],[0,67,0.82,0.65],[0,71,0.82,0.59],
+      [1,74,0.39,0.83],[1.5,71,0.38,0.68],[2,67,0.83,0.73],
+      [3,57,0.86,0.78],[3,60,0.86,0.65],[3,64,0.86,0.65],[3,67,0.86,0.59],
+      [4,71,0.4,0.85],[4.5,69,0.4,0.67],[5,64,1.28,0.76]
+    ]
+  },
+  {
+    "name":"ベルのアルペジオ","suits":["Aurelian Bell"],"beat":400,
+    "notes":[
+      [0,76,1.6,0.8],[0.5,79,1.4,0.7],[1,84,1.4,0.75],[1.5,83,1,0.65],
+      [2,79,1.8,0.72],[3,74,1,0.6],[3.5,76,2.5,0.75],
+      [4,64,3,0.55],[4,69,3,0.6],[5,72,0.9,0.62],[5.5,71,0.9,0.58],[6,69,2,0.7]
+    ]
+  },
+  {
+    "name":"ベースリフ","suits":["Diesel Bass"],"beat":260,
+    "notes":[
+      [0,40,0.45,0.9],[0.5,40,0.2,0.55],[0.75,40,0.2,0.6],[1,43,0.45,0.8],[1.5,45,0.45,0.75],
+      [2,47,0.2,0.7],[2.5,45,0.2,0.65],[3,43,0.45,0.8],[3.5,38,0.45,0.85],
+      [4,40,0.45,0.9],[4.5,40,0.2,0.55],[4.75,52,0.2,0.7],[5,50,0.45,0.8],[5.5,47,0.45,0.75],
+      [6,45,0.45,0.75],[6.5,43,0.45,0.7],[7,40,1.2,0.9]
+    ]
+  },
+  {
+    "name":"オルガンのコード進行","suits":["Drawbar Organ"],"beat":500,
+    "notes":[
+      [0,53,1.9,0.7],[0,57,1.9,0.65],[0,60,1.9,0.65],[0,69,0.9,0.75],[1,72,0.9,0.7],
+      [2,53,1.9,0.7],[2,58,1.9,0.65],[2,62,1.9,0.65],[2,70,0.9,0.75],[3,74,0.9,0.72],
+      [4,48,1.9,0.7],[4,58,1.9,0.65],[4,64,1.9,0.65],[4,72,0.45,0.75],[4.5,70,0.45,0.7],[5,67,0.9,0.7],
+      [6,53,2.4,0.7],[6,57,2.4,0.65],[6,60,2.4,0.65],[6,65,2.4,0.75]
+    ]
+  },
+  {
+    "name":"ゆっくりした和音","suits":["Glass Choir"],"beat":650,
+    "notes":[
+      [0,50,3.6,0.6],[0,57,3.6,0.55],[0,61,3.6,0.55],[0,64,3.6,0.55],[0.5,69,3,0.5],
+      [4,47,3.6,0.6],[4,54,3.6,0.55],[4,57,3.6,0.55],[4,62,3.6,0.55],[4.5,66,3,0.5],
+      [8,43,4,0.6],[8,50,4,0.55],[8,54,4,0.55],[8,59,4,0.55],[8.5,62,3.5,0.5]
+    ]
+  },
+  {
+    "name":"ブルースの単音フレーズ","suits":["Init Sine"],"beat":300,
+    "notes":[
+      [0,60,0.6,0.8],[0.66,63,0.3,0.65],[1,65,0.6,0.75],[1.66,66,0.3,0.6],[2,67,0.9,0.8],
+      [3,70,0.6,0.7],[3.66,67,0.3,0.6],[4,65,0.6,0.7],[4.66,63,0.3,0.6],[5,60,1.8,0.8]
+    ]
+  }
+]
+;
+PHRASES.forEach((p,i)=>{const o=el("option",p.name);o.value=i;$("phrase").append(o)});
+// Choosing a preset also picks the phrase written for it. Imported patches keep the current choice.
+function suitPhrase(name){const i=PHRASES.findIndex(p=>p.suits.includes(name));if(i>=0)$("phrase").value=String(i)}
+$("phrase").onchange=e=>{if(demoActive){epoch++;finishDemo()}e.target.blur()};
 $("demo").onclick=async()=>{
   if(demoActive){epoch++;finishDemo();return}
   const token=++epoch;demoActive=true;$("demo").setAttribute("aria-pressed","true");$("demo").textContent="■ 試奏を停止";
   try {await prepare();if(token!==epoch)return;
-    const beat=455;
-    phrase.forEach(([start,note,duration,velocity],i)=>{
+    const {beat,notes}=PHRASES[+$("phrase").value]??PHRASES[0];
+    notes.forEach(([start,note,duration,velocity],i)=>{
       const key="demo:"+i;
       demoTimers.push(setTimeout(()=>strike(key,note,velocity),start*beat),setTimeout(()=>lift(key),(start+duration)*beat));
     });
-    demoTimers.push(setTimeout(finishDemo,6.35*beat));
+    const end=Math.max(...notes.map(([start,,duration])=>start+duration));
+    demoTimers.push(setTimeout(finishDemo,(end+.35)*beat));
   }catch(e){finishDemo();showError(e)}
 };
 let imported;

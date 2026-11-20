@@ -160,4 +160,15 @@ for (const [old, edges] of Object.entries(oldWiring)) {
   upgraded.operators.forEach((op, i) => { if (!used.has(i)) assert.equal(op[1], 0); });
 }
 assert.equal(upgradePatch(bank[0]), bank[0], "FM–8 patches pass through unchanged");
-console.log("Nine-channel scope and algorithm checks passed.");
+// Demo phrases: playable notes, and one phrase written for every preset.
+const phrases = JSON.parse(fs.readFileSync(path.join(root, "phrases.json"), "utf8"));
+for (const p of phrases) {
+  assert(typeof p.name === "string" && p.name && p.beat > 0 && p.notes.length > 0, p.name);
+  for (const [start, note, duration, velocity] of p.notes) {
+    assert(start >= 0 && duration > 0 && Number.isInteger(note) && note >= 0 && note <= 127, p.name);
+    assert(velocity > 0 && velocity <= 1, p.name);
+  }
+  for (const name of p.suits) assert(bank.some(q => q.name === name), p.name + " → " + name);
+}
+for (const q of bank) assert(phrases.some(p => p.suits.includes(q.name)), "no phrase for " + q.name);
+console.log("Nine-channel scope, algorithm and phrase checks passed.");
