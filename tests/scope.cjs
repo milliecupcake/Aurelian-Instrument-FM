@@ -306,11 +306,24 @@ function voices(proc) { return Array.from(proc.engine.slots).filter(Boolean).map
   assert.equal(frame.algorithm, bank[4].algorithm);
 }
 // Every Program, including those inside Combinations, stays within the editor's ranges:
-// ratio, level, attack, decay, sustain, release.
-const limits = [[0.25,16],[0,1],[0.002,4],[0.01,5],[0,1],[0.01,4]];
+// ratio, level, attack, decay, sustain, release, and the optional wave (0–4).
+const limits = [[0.25,16],[0,1],[0.002,4],[0.01,5],[0,1],[0.01,4],[0,4]];
 for (const p of [...bank, ...combis.flatMap(c => c.timbres.map(t => t.program))]) {
   assert(p.feedback >= 0 && p.feedback <= 1, p.name);
-  p.operators.forEach(op => op.forEach((v, j) => assert(v >= limits[j][0] && v <= limits[j][1], p.name + " " + v)));
+  p.operators.forEach(op => {
+    assert(op.length === 6 || (op.length === 7 && Number.isInteger(op[6])), p.name);
+    op.forEach((v, j) => assert(v >= limits[j][0] && v <= limits[j][1], p.name + " " + v));
+  });
+}
+// Programs 24–30 show off the new waveforms: every one uses at least one non-sine carrier,
+// and the whole set uses all four new waves.
+{
+  const waved = bank.slice(23);
+  assert.deepEqual(waved.map(p => p.name), ["Saw Lead", "Square Bass", "Chip Pulse", "Saw Ensemble", "Triangle Flute", "Saw Brass", "Hollow Reed"]);
+  for (const p of waved) assert(route(p.algorithm).carriers.some(i => (p.operators[i][6] ?? 0) > 0 && p.operators[i][1] > 0), p.name);
+  assert.deepEqual([...new Set(waved.flatMap(p => p.operators.map(op => op[6] ?? 0)))].sort(), [0, 1, 2, 3, 4]);
+  // Each new Program and the Synth Lead / Bass Combination has a phrase.
+  for (const name of [...waved.map(p => p.name), "Synth Lead / Bass"]) assert(phrases.some(f => f.suits.includes(name)), name);
 }
 
 // Drum Kit: each key plays exactly one drum, at that drum's own pitch.
