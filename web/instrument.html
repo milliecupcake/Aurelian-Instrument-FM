@@ -19,7 +19,8 @@ main{max-width:1140px;margin:0 auto;padding:22px 32px 24px}
 .screen{display:flex;flex-direction:column;justify-content:space-between;gap:10px}
 .algo{align-items:center}.algo select{height:28px;border:1px solid var(--line);border-radius:4px;background:var(--panel);font:600 12px var(--mono);padding:0 4px}.algo button{min-width:28px}
 .screen-foot{flex-wrap:wrap}.mode{display:flex;gap:3px}.mode button{height:22px;padding:0 8px;font:600 10px var(--mono);letter-spacing:.1em;background:transparent;color:#adc4ad;border-color:#56705f}.mode button[aria-pressed=true]{background:#e1e9ca;color:var(--ink);border-color:#e1e9ca}
-/* Grid children may shrink, so the wide Timbre table scrolls inside its own box. */.deck>*{min-width:0}.combi .section-title{gap:10px;flex-wrap:wrap}.combi-hint{font-size:11px;color:var(--soft)}.timbre-wrap{overflow-x:auto;margin-top:10px}.timbres{border-collapse:collapse;width:100%;min-width:860px;font-size:12px}.timbres th{font:600 10px var(--mono);letter-spacing:.06em;color:#53695e;text-align:left;padding:0 5px 5px;white-space:nowrap}.timbres td{padding:2px 5px;border-top:1px solid #d9dccd;white-space:nowrap}.timbres tr.off td:not(:first-child):not(:nth-child(2)){opacity:.45}.timbres tr.editing td{background:#e6e9da}.timbres button{height:24px;min-width:34px;font:600 11px var(--mono)}.timbres select,.timbres input[type=number]{font:12px var(--mono);height:24px;border:1px solid var(--line);border-radius:3px;background:#fbfaf3}.timbres select.program{width:150px}.timbres input[type=number]{width:52px}.timbres input[type=range]{width:74px;vertical-align:middle}.timbres output{display:inline-block;width:34px;font:11px var(--mono);text-align:right}.timbres .dash{margin:0 3px;color:#6d7d70}
+/* Grid children may shrink, so the wide Timbre table scrolls inside its own box. */.deck>*{min-width:0}.midi{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid #d5d8c8;font-size:12px}.midi .small{color:#53695e}.midi button{height:27px;padding:0 10px;font-size:12px}.midi select{height:27px;max-width:220px;border:1px solid var(--line);border-radius:4px;background:#fbfaf3;font:12px var(--sans)}#midiStatus{color:var(--soft)}#midiDot.on{background:#c16a46;box-shadow:0 0 0 3px #c16a4633}
+.combi .section-title{gap:10px;flex-wrap:wrap}.combi-hint{font-size:11px;color:var(--soft)}.timbre-wrap{overflow-x:auto;margin-top:10px}.timbres{border-collapse:collapse;width:100%;min-width:860px;font-size:12px}.timbres th{font:600 10px var(--mono);letter-spacing:.06em;color:#53695e;text-align:left;padding:0 5px 5px;white-space:nowrap}.timbres td{padding:2px 5px;border-top:1px solid #d9dccd;white-space:nowrap}.timbres tr.off td:not(:first-child):not(:nth-child(2)){opacity:.45}.timbres tr.editing td{background:#e6e9da}.timbres button{height:24px;min-width:34px;font:600 11px var(--mono)}.timbres select,.timbres input[type=number]{font:12px var(--mono);height:24px;border:1px solid var(--line);border-radius:3px;background:#fbfaf3}.timbres select.program{width:150px}.timbres input[type=number]{width:52px}.timbres input[type=range]{width:74px;vertical-align:middle}.timbres output{display:inline-block;width:34px;font:11px var(--mono);text-align:right}.timbres .dash{margin:0 3px;color:#6d7d70}
 .screen-foot select{flex:1 1 130px;height:34px;min-width:0;max-width:100%;border:1px solid #79907c;border-radius:4px;background:transparent;color:#e0e8d3;font-size:12px;padding:0 6px}
 .routing{display:block;position:relative;height:auto;margin:8px 0 3px}.routing svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}.routing path{fill:none;stroke:#8d9c8d;stroke-width:1}.routing path.bus{stroke:#859a86;stroke-width:2}.routing .node{position:absolute;transform:translate(-50%,-50%)}
 .monitor{padding:14px 16px;background:#172e29;color:#e2e7cf;border-color:#11251f}
@@ -58,7 +59,8 @@ main{max-width:1140px;margin:0 auto;padding:22px 32px 24px}
 <p class="monitor-caption">OP1〜8 は最後に押した鍵の波形（Combination では編集中の Timbre）。最終出力には和音とリリース中の余韻も含まれます。</p>
 </section>
 <section class="module"><div class="editor-head"><h2>音色編集 <span class="role" id="role"></span></h2><div class="edit-tabs" id="operators" aria-label="編集するオペレーター"></div></div><div class="params" id="params"></div><p class="edit-foot" id="editHint"></p></section>
-<section class="module"><div class="key-head"><h2>鍵盤 <span class="small">Keyboard</span></h2><div class="key-controls"><span>Oct</span><button id="octDown" aria-label="1オクターブ下げる">−</button><output id="octave"></output><button id="octUp" aria-label="1オクターブ上げる">＋</button><label for="gain" class="gain-control">音量</label><input type="range" id="gain" min="0" max="1" step=".01" value=".65"></div></div><div id="keys" class="keys" aria-label="演奏鍵盤"></div><div class="key-foot"><span>A〜K で演奏 ／ W・E・T・Y・U が黒鍵</span><span>Shift で強く弾く</span></div></section>
+<section class="module"><div class="key-head"><h2>鍵盤 <span class="small">Keyboard</span></h2><div class="key-controls"><span>Oct</span><button id="octDown" aria-label="1オクターブ下げる">−</button><output id="octave"></output><button id="octUp" aria-label="1オクターブ上げる">＋</button><label for="gain" class="gain-control">音量</label><input type="range" id="gain" min="0" max="1" step=".01" value=".65"></div></div><div id="keys" class="keys" aria-label="演奏鍵盤"></div><div class="key-foot"><span>A〜K で演奏 ／ W・E・T・Y・U が黒鍵</span><span>Shift で強く弾く</span></div>
+<div class="midi" role="group" aria-label="MIDI 入力"><span class="small">MIDI</span><button id="midiEnable">MIDI 機器を使う</button><select id="midiInput" aria-label="MIDI 入力機器" hidden></select><select id="midiChannel" aria-label="受信する MIDI チャンネル" hidden></select><i class="dot" id="midiDot" aria-hidden="true"></i><span id="midiStatus" role="status"></span></div></section>
 </div>
 <div class="files"><button id="store">音色を書き出す ↓</button><button id="recall">音色を読み込む ↑</button><input id="file" type="file" accept=".json,application/json" hidden><span id="edition"></span></div><p class="error" role="alert" id="error"></p>
 </main>
@@ -69,6 +71,7 @@ __SHARED_LIB__
 const WASM="__WASM_BASE64__";
 const BANK=__PATCHES__;
 const COMBIS=__COMBINATIONS__;
+__MIDI_LIB__
 const $=id=>document.getElementById(id);
 const clone=o=>JSON.parse(JSON.stringify(o));
 const el=(s,t)=>{const n=document.createElement(s);n.textContent=t;return n};
@@ -336,7 +339,7 @@ function finishDemo(){
   for(const key of Array.from(held.keys()))if(key.startsWith("demo:"))lift(key);
   $("demo").setAttribute("aria-pressed","false");$("demo").textContent="▶ フレーズ試奏";
 }
-function panic(){epoch++;finishDemo();held.clear();send({type:"silence"});paintKeys()}
+function panic(){epoch++;finishDemo();held.clear();midi.reset();send({type:"silence"});paintKeys()}
 $("stop").onclick=panic;
 for(let i=0;i<codes.length;i++){
   const b=el("button",codes[i].slice(-1));b.className="piano";b.setAttribute("aria-label",names[i]+" ("+codes[i].slice(-1)+")");
@@ -356,8 +359,54 @@ window.addEventListener("keydown",e=>{
   if(!e.repeat)strike(e.code,(octave+1)*12+i,e.shiftKey ? .98 : .72);
 });
 window.addEventListener("keyup",e=>lift(e.code));
-window.addEventListener("blur",panic);
-document.addEventListener("visibilitychange",()=>{if(document.hidden)panic()});
+// Leaving the window can swallow key-up events, so release computer keys and pointers.
+// MIDI keys and the demo phrase keep playing: their note-offs still arrive.
+function releaseLocalKeys(){for(const token of Array.from(held.keys()))if(!token.startsWith("midi:")&&!token.startsWith("demo:"))lift(token)}
+window.addEventListener("blur",releaseLocalKeys);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)releaseLocalKeys()});
+
+// ---------- MIDI input (Web MIDI). Note on/off with velocity, sustain pedal (CC64),
+// All Sound Off (CC120), All Notes Off (CC123) and Program Change, which picks a preset in the current mode.
+let midiAccess=null,midiBlink=0;
+const midi=new MidiRouter({
+  strike(token,note,velocity){
+    $("midiDot").classList.add("on");clearTimeout(midiBlink);midiBlink=setTimeout(()=>$("midiDot").classList.remove("on"),120);
+    strike(token,note,velocity);
+  },
+  lift,
+  silence(){held.forEach((_,token)=>{if(token.startsWith("midi:"))held.delete(token)});send({type:"silence"});paintKeys()},
+  program(n){
+    const list=mode==="program"?BANK:COMBIS;if(!list[n])return;
+    if(mode==="program")loadPatch(BANK[n],n);else loadCombi(COMBIS[n],n);
+  }
+});
+$("midiChannel").append(el("option","全チャンネル"));$("midiChannel").options[0].value=0;
+for(let c=1;c<=16;c++){const o=el("option","ch "+c);o.value=c;$("midiChannel").append(o)}
+$("midiChannel").onchange=e=>{midi.releaseAll();midi.channel=+e.target.value;e.target.blur()};
+function refreshMidiInputs(){
+  const inputs=Array.from(midiAccess.inputs.values()),select=$("midiInput"),chosen=select.value||"*";
+  select.replaceChildren(el("option","すべての入力"));select.options[0].value="*";
+  for(const input of inputs){const o=el("option",input.name||"MIDI 入力");o.value=input.id;select.append(o)}
+  select.value=inputs.some(i=>i.id===chosen)?chosen:"*";
+  for(const input of inputs)input.onmidimessage=select.value==="*"||select.value===input.id?e=>midi.receive(e.data,input.id):null;
+  $("midiStatus").textContent=inputs.length?inputs.length+" 台の MIDI 機器から受信中":"MIDI 機器が見つかりません。接続すると自動で使えます。";
+}
+$("midiInput").onchange=e=>{midi.releaseAll();refreshMidiInputs();e.target.blur()};
+$("midiEnable").onclick=async()=>{
+  if(!navigator.requestMIDIAccess){showError(Error("このブラウザーは MIDI 機器に対応していません。PC の Chrome または Edge で開いてください。"));return}
+  try{
+    // The click also starts the audio engine, since MIDI messages alone cannot.
+    await prepare();
+    midiAccess=await navigator.requestMIDIAccess();
+  }catch(e){showError(e instanceof DOMException?Error("MIDI 機器を使う許可が得られませんでした。ブラウザーのサイト設定で MIDI を許可してください。"):e);return}
+  midiAccess.onstatechange=e=>{
+    // A disconnected keyboard cannot send its note-offs, so release its keys now.
+    if(e.port.type==="input"&&e.port.state==="disconnected")midi.releaseAll(e.port.id);
+    refreshMidiInputs();
+  };
+  $("midiEnable").hidden=true;$("midiInput").hidden=false;$("midiChannel").hidden=false;$("error").textContent="";
+  refreshMidiInputs();
+};
 // Short original phrases in web/phrases.json. Each entry is [start beat, MIDI note, length in beats, velocity].
 const PHRASES=__PHRASES__;
 PHRASES.forEach((p,i)=>{const o=el("option",p.name);o.value=i;$("phrase").append(o)});

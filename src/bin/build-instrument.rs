@@ -33,7 +33,8 @@ fn build() -> io::Result<()> {
         .replace("__ALGORITHMS__", &format!("[{}]", table.join(",")))
         .replace("__PATCHES__", include_str!("../../web/presets.json"))
         .replace("__PHRASES__", include_str!("../../web/phrases.json"))
-        .replace("__COMBINATIONS__", include_str!("../../web/combinations.json"));
+        .replace("__COMBINATIONS__", include_str!("../../web/combinations.json"))
+        .replace("__MIDI_LIB__", include_str!("../../web/midi.js"));
     // Play-FM8.html runs the JavaScript reference engine and needs no build tools to open.
     fs::write(root.join("Play-FM8.html"), page.replace("__WASM_BASE64__", ""))?;
     let dest = root.join("Aurelian-FM8.html");

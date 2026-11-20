@@ -274,4 +274,62 @@ for (const p of [...bank, ...combis.flatMap(c => c.timbres.map(t => t.program))]
   start(synth, 1, 64);
   assert.equal(voices(synth).length, 0, "E4 has no drum");
 }
-console.log("Nine-channel scope, algorithm, phrase and combination checks passed.");
+// ---- MIDI input: message parsing, channel filter, sustain pedal and controllers.
+{
+  const page = vm.createContext({});
+  vm.runInContext(fs.readFileSync(path.join(root, "midi.js"), "utf8") + ";this.parseMidi=parseMidi;this.MidiRouter=MidiRouter;", page);
+  const parse = data => JSON.parse(JSON.stringify(page.parseMidi(data)));
+  assert.deepEqual(parse([0x90, 60, 100]), {type:"on", channel:1, note:60, velocity:100});
+  assert.deepEqual(parse([0x9f, 60, 0]), {type:"off", channel:16, note:60});
+  assert.deepEqual(parse([0x82, 61, 40]), {type:"off", channel:3, note:61});
+  assert.deepEqual(parse([0xb0, 64, 127]), {type:"cc", channel:1, controller:64, value:127});
+  assert.deepEqual(parse([0xc4, 5]), {type:"program", channel:5, program:5});
+  assert.equal(page.parseMidi([0xf8]), null, "clock");
+  assert.equal(page.parseMidi([0xe0, 0, 64]), null, "pitch bend is ignored");
+
+  const log = [];
+  const router = new page.MidiRouter({
+    strike:(t, n, v) => log.push(["strike", t, n, Math.round(v * 127)]), lift:t => log.push(["lift", t]),
+    silence:() => log.push(["silence"]), program:n => log.push(["program", n])
+  });
+  const take = () => JSON.parse(JSON.stringify(log.splice(0)));
+  router.receive([0x90, 60, 90], "kbd");
+  router.receive([0x80, 60, 0], "kbd");
+  assert.deepEqual(take(), [["strike", "midi:kbd:1:60", 60, 90], ["lift", "midi:kbd:1:60"]]);
+
+  // Sustain holds released keys until the pedal comes up. Restriking a held key restarts it.
+  router.receive([0xb0, 64, 127], "kbd");
+  router.receive([0x90, 64, 80], "kbd");
+  router.receive([0x90, 67, 80], "kbd");
+  router.receive([0x80, 64, 0], "kbd");
+  router.receive([0x90, 64, 0], "kbd");   // a repeated note-off changes nothing
+  assert.deepEqual(take().map(e => e[0]), ["strike", "strike"]);
+  router.receive([0x90, 64, 70], "kbd");
+  assert.deepEqual(take(), [["lift", "midi:kbd:1:64"], ["strike", "midi:kbd:1:64", 64, 70]]);
+  router.receive([0x80, 64, 0], "kbd");
+  router.receive([0xb0, 64, 0], "kbd");
+  assert.deepEqual(take(), [["lift", "midi:kbd:1:64"]], "67 is still held down");
+  router.receive([0x80, 67, 0], "kbd");
+  assert.deepEqual(take(), [["lift", "midi:kbd:1:67"]]);
+
+  // Channel filter, two inputs, a disconnected input, All Notes Off, All Sound Off, Program Change.
+  router.channel = 2;
+  router.receive([0x90, 50, 100], "kbd");
+  assert.deepEqual(take(), [], "channel 1 is filtered out");
+  router.receive([0x91, 50, 100], "kbd");
+  router.receive([0x91, 50, 100], "pad");
+  router.receive([0x91, 52, 100], "pad");
+  take();
+  router.releaseAll("pad");
+  assert.deepEqual(take().map(e => e[1]).sort(), ["midi:pad:2:50", "midi:pad:2:52"]);
+  router.receive([0xb1, 123, 0], "kbd");
+  assert.deepEqual(take(), [["lift", "midi:kbd:2:50"]]);
+  router.receive([0x91, 55, 100], "kbd");
+  take();
+  router.receive([0xb1, 120, 0], "kbd");
+  router.receive([0x81, 55, 0], "kbd");
+  assert.deepEqual(take(), [["silence"]], "after All Sound Off the late note-off is ignored");
+  router.receive([0xc1, 3], "kbd");
+  assert.deepEqual(take(), [["program", 3]]);
+}
+console.log("Nine-channel scope, algorithm, phrase, combination and MIDI checks passed.");

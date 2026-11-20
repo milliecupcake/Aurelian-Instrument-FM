@@ -19,7 +19,8 @@ main{max-width:1140px;margin:0 auto;padding:22px 32px 24px}
 .screen{display:flex;flex-direction:column;justify-content:space-between;gap:10px}
 .algo{align-items:center}.algo select{height:28px;border:1px solid var(--line);border-radius:4px;background:var(--panel);font:600 12px var(--mono);padding:0 4px}.algo button{min-width:28px}
 .screen-foot{flex-wrap:wrap}.mode{display:flex;gap:3px}.mode button{height:22px;padding:0 8px;font:600 10px var(--mono);letter-spacing:.1em;background:transparent;color:#adc4ad;border-color:#56705f}.mode button[aria-pressed=true]{background:#e1e9ca;color:var(--ink);border-color:#e1e9ca}
-/* Grid children may shrink, so the wide Timbre table scrolls inside its own box. */.deck>*{min-width:0}.combi .section-title{gap:10px;flex-wrap:wrap}.combi-hint{font-size:11px;color:var(--soft)}.timbre-wrap{overflow-x:auto;margin-top:10px}.timbres{border-collapse:collapse;width:100%;min-width:860px;font-size:12px}.timbres th{font:600 10px var(--mono);letter-spacing:.06em;color:#53695e;text-align:left;padding:0 5px 5px;white-space:nowrap}.timbres td{padding:2px 5px;border-top:1px solid #d9dccd;white-space:nowrap}.timbres tr.off td:not(:first-child):not(:nth-child(2)){opacity:.45}.timbres tr.editing td{background:#e6e9da}.timbres button{height:24px;min-width:34px;font:600 11px var(--mono)}.timbres select,.timbres input[type=number]{font:12px var(--mono);height:24px;border:1px solid var(--line);border-radius:3px;background:#fbfaf3}.timbres select.program{width:150px}.timbres input[type=number]{width:52px}.timbres input[type=range]{width:74px;vertical-align:middle}.timbres output{display:inline-block;width:34px;font:11px var(--mono);text-align:right}.timbres .dash{margin:0 3px;color:#6d7d70}
+/* Grid children may shrink, so the wide Timbre table scrolls inside its own box. */.deck>*{min-width:0}.midi{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:11px;border-top:1px solid #d5d8c8;font-size:12px}.midi .small{color:#53695e}.midi button{height:27px;padding:0 10px;font-size:12px}.midi select{height:27px;max-width:220px;border:1px solid var(--line);border-radius:4px;background:#fbfaf3;font:12px var(--sans)}#midiStatus{color:var(--soft)}#midiDot.on{background:#c16a46;box-shadow:0 0 0 3px #c16a4633}
+.combi .section-title{gap:10px;flex-wrap:wrap}.combi-hint{font-size:11px;color:var(--soft)}.timbre-wrap{overflow-x:auto;margin-top:10px}.timbres{border-collapse:collapse;width:100%;min-width:860px;font-size:12px}.timbres th{font:600 10px var(--mono);letter-spacing:.06em;color:#53695e;text-align:left;padding:0 5px 5px;white-space:nowrap}.timbres td{padding:2px 5px;border-top:1px solid #d9dccd;white-space:nowrap}.timbres tr.off td:not(:first-child):not(:nth-child(2)){opacity:.45}.timbres tr.editing td{background:#e6e9da}.timbres button{height:24px;min-width:34px;font:600 11px var(--mono)}.timbres select,.timbres input[type=number]{font:12px var(--mono);height:24px;border:1px solid var(--line);border-radius:3px;background:#fbfaf3}.timbres select.program{width:150px}.timbres input[type=number]{width:52px}.timbres input[type=range]{width:74px;vertical-align:middle}.timbres output{display:inline-block;width:34px;font:11px var(--mono);text-align:right}.timbres .dash{margin:0 3px;color:#6d7d70}
 .screen-foot select{flex:1 1 130px;height:34px;min-width:0;max-width:100%;border:1px solid #79907c;border-radius:4px;background:transparent;color:#e0e8d3;font-size:12px;padding:0 6px}
 .routing{display:block;position:relative;height:auto;margin:8px 0 3px}.routing svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}.routing path{fill:none;stroke:#8d9c8d;stroke-width:1}.routing path.bus{stroke:#859a86;stroke-width:2}.routing .node{position:absolute;transform:translate(-50%,-50%)}
 .monitor{padding:14px 16px;background:#172e29;color:#e2e7cf;border-color:#11251f}
@@ -58,7 +59,8 @@ main{max-width:1140px;margin:0 auto;padding:22px 32px 24px}
 <p class="monitor-caption">OP1〜8 は最後に押した鍵の波形（Combination では編集中の Timbre）。最終出力には和音とリリース中の余韻も含まれます。</p>
 </section>
 <section class="module"><div class="editor-head"><h2>音色編集 <span class="role" id="role"></span></h2><div class="edit-tabs" id="operators" aria-label="編集するオペレーター"></div></div><div class="params" id="params"></div><p class="edit-foot" id="editHint"></p></section>
-<section class="module"><div class="key-head"><h2>鍵盤 <span class="small">Keyboard</span></h2><div class="key-controls"><span>Oct</span><button id="octDown" aria-label="1オクターブ下げる">−</button><output id="octave"></output><button id="octUp" aria-label="1オクターブ上げる">＋</button><label for="gain" class="gain-control">音量</label><input type="range" id="gain" min="0" max="1" step=".01" value=".65"></div></div><div id="keys" class="keys" aria-label="演奏鍵盤"></div><div class="key-foot"><span>A〜K で演奏 ／ W・E・T・Y・U が黒鍵</span><span>Shift で強く弾く</span></div></section>
+<section class="module"><div class="key-head"><h2>鍵盤 <span class="small">Keyboard</span></h2><div class="key-controls"><span>Oct</span><button id="octDown" aria-label="1オクターブ下げる">−</button><output id="octave"></output><button id="octUp" aria-label="1オクターブ上げる">＋</button><label for="gain" class="gain-control">音量</label><input type="range" id="gain" min="0" max="1" step=".01" value=".65"></div></div><div id="keys" class="keys" aria-label="演奏鍵盤"></div><div class="key-foot"><span>A〜K で演奏 ／ W・E・T・Y・U が黒鍵</span><span>Shift で強く弾く</span></div>
+<div class="midi" role="group" aria-label="MIDI 入力"><span class="small">MIDI</span><button id="midiEnable">MIDI 機器を使う</button><select id="midiInput" aria-label="MIDI 入力機器" hidden></select><select id="midiChannel" aria-label="受信する MIDI チャンネル" hidden></select><i class="dot" id="midiDot" aria-hidden="true"></i><span id="midiStatus" role="status"></span></div></section>
 </div>
 <div class="files"><button id="store">音色を書き出す ↓</button><button id="recall">音色を読み込む ↑</button><input id="file" type="file" accept=".json,application/json" hidden><span id="edition"></span></div><p class="error" role="alert" id="error"></p>
 </main>
@@ -555,6 +557,78 @@ const BANK=[
       [1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],
       [1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]
     ]
+  },
+  {
+    "name":"JD Glass Piano","algorithm":72,"feedback":0.06,
+    "operators":[
+      [1,0.82,0.002,2.7,0,0.24],[1,0.62,0.002,0.42,0,0.12],
+      [1.0018,0.4,0.003,2,0,0.28],[2.0036,0.24,0.002,0.55,0,0.15],
+      [2,0.23,0.002,1.1,0,0.2],[1,0.22,0.002,0.2,0,0.1],
+      [1,0.14,0.002,0.095,0,0.06],[9.17,0.45,0.002,0.04,0,0.03]
+    ]
+  },
+  {
+    "name":"JD Crystal EP","algorithm":72,"feedback":0.04,
+    "operators":[
+      [1,0.78,0.005,3.1,0.14,0.7],[1,0.38,0.003,0.8,0.06,0.35],
+      [1.002,0.38,0.007,2.7,0.1,0.75],[7.014,0.21,0.002,0.32,0,0.18],
+      [2.002,0.14,0.003,1.8,0,0.8],[3.5,0.2,0.002,0.7,0,0.35],
+      [4,0.04,0.002,0.16,0,0.1],[1,0.12,0.002,0.07,0,0.06]
+    ]
+  },
+  {
+    "name":"JD Bell Mist","algorithm":72,"feedback":0.03,
+    "operators":[
+      [1,0.62,0.003,2.8,0,1.3],[2.01,0.24,0.002,1.5,0,0.6],
+      [2.001,0.22,0.004,2.3,0,1.1],[3.51,0.24,0.002,0.9,0,0.5],
+      [3.997,0.1,0.003,1.2,0,0.65],[1.414,0.12,0.002,0.5,0,0.3],
+      [1.003,0.18,0.7,2,0.45,1.5],[1.003,0.09,1.3,2,0.4,1.6]
+    ]
+  },
+  {
+    "name":"JD Silk Pad","algorithm":72,"feedback":0.04,
+    "operators":[
+      [1,0.48,0.22,2.6,0.8,1.8],[1,0.2,0.55,2.8,0.5,1.7],
+      [1.004,0.4,0.4,2.8,0.8,2],[2.008,0.14,0.85,2.6,0.45,1.9],
+      [0.997,0.36,0.6,3,0.8,2.2],[0.997,0.22,1.2,2.8,0.45,2],
+      [2,0.1,0.95,2.5,0.65,1.8],[3,0.08,1.5,2.4,0.35,1.6]
+    ]
+  },
+  {
+    "name":"JD Sweep Strings","algorithm":72,"feedback":0.08,
+    "operators":[
+      [1,0.48,0.35,3,0.85,1.8],[1,0.5,1.6,2.4,0.25,1.3],
+      [1.006,0.4,0.45,3,0.8,2],[1.006,0.44,1.9,2.7,0.2,1.4],
+      [0.996,0.4,0.55,3,0.8,2.1],[0.996,0.42,2.2,2.4,0.3,1.5],
+      [2.002,0.12,0.8,2.5,0.65,1.7],[1.001,0.2,2.6,2.2,0.2,1.3]
+    ]
+  },
+  {
+    "name":"JD Air Choir","algorithm":72,"feedback":0.03,
+    "operators":[
+      [1,0.5,0.45,2.5,0.8,1.8],[1,0.08,0.65,2,0.65,1.8],
+      [2.002,0.22,0.65,2.8,0.7,2],[0.5,0.11,0.9,2.5,0.6,1.9],
+      [3.004,0.14,0.8,2.5,0.65,1.9],[1.001,0.2,1.1,2.8,0.5,1.8],
+      [5.002,0.07,1.2,2.8,0.55,2.1],[2.001,0.12,1.5,2.5,0.45,1.9]
+    ]
+  },
+  {
+    "name":"JD Wire Pluck","algorithm":80,"feedback":0.03,
+    "operators":[
+      [1,0.65,0.003,1.3,0,0.55],[2.002,0.16,0.003,0.8,0,0.35],
+      [3.002,0.18,0.002,0.45,0,0.22],[5.41,0.22,0.002,0.13,0,0.1],
+      [1.003,0.24,0.003,0.8,0,0.4],[3.009,0.3,0.002,0.18,0,0.12],
+      [7.07,0.03,0.002,0.08,0,0.05],[2.414,0.17,0.002,0.04,0,0.03]
+    ]
+  },
+  {
+    "name":"JD Soft Brass","algorithm":72,"feedback":0.08,
+    "operators":[
+      [1,0.6,0.04,0.8,0.75,0.3],[1,0.37,0.07,0.35,0.48,0.24],
+      [1.005,0.42,0.05,0.8,0.75,0.32],[1.005,0.34,0.085,0.4,0.45,0.26],
+      [0.997,0.35,0.06,0.9,0.75,0.35],[0.997,0.32,0.1,0.45,0.42,0.28],
+      [2,0.12,0.045,0.6,0.6,0.28],[1,0.18,0.08,0.3,0.4,0.22]
+    ]
   }
 ]
 ;
@@ -743,9 +817,191 @@ const COMBIS=[
       {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
        "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}}
     ]
+  },
+  {
+    "name":"JD Stage Piano",
+    "timbres":[
+      {"on":true,"volume":0.8,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"JD Glass Piano","algorithm":72,"feedback":0.06,"operators":[[1,0.82,0.002,2.7,0,0.24],[1,0.62,0.002,0.42,0,0.12],[1.0018,0.4,0.003,2,0,0.28],[2.0036,0.24,0.002,0.55,0,0.15],[2,0.23,0.002,1.1,0,0.2],[1,0.22,0.002,0.2,0,0.1],[1,0.14,0.002,0.095,0,0.06],[9.17,0.45,0.002,0.04,0,0.03]]}},
+      {"on":true,"volume":0.3,"pan":0.2,"transpose":0,"detune":2,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"JD Crystal EP","algorithm":72,"feedback":0.04,"operators":[[1,0.78,0.005,3.1,0.14,0.7],[1,0.38,0.003,0.8,0.06,0.35],[1.002,0.38,0.007,2.7,0.1,0.75],[7.014,0.21,0.002,0.32,0,0.18],[2.002,0.14,0.003,1.8,0,0.8],[3.5,0.2,0.002,0.7,0,0.35],[4,0.04,0.002,0.16,0,0.1],[1,0.12,0.002,0.07,0,0.06]]}},
+      {"on":true,"volume":0.09,"pan":-0.3,"transpose":12,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":96,"velocityHigh":127,
+       "program":{"name":"JD Bell Mist","algorithm":72,"feedback":0.03,"operators":[[1,0.62,0.003,2.8,0,1.3],[2.01,0.24,0.002,1.5,0,0.6],[2.001,0.22,0.004,2.3,0,1.1],[3.51,0.24,0.002,0.9,0,0.5],[3.997,0.1,0.003,1.2,0,0.65],[1.414,0.12,0.002,0.5,0,0.3],[1.003,0.18,0.7,2,0.45,1.5],[1.003,0.09,1.3,2,0.4,1.6]]}},
+      {"on":true,"volume":0.16,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"JD Silk Pad","algorithm":72,"feedback":0.04,"operators":[[1,0.48,0.22,2.6,0.8,1.8],[1,0.2,0.55,2.8,0.5,1.7],[1.004,0.4,0.4,2.8,0.8,2],[2.008,0.14,0.85,2.6,0.45,1.9],[0.997,0.36,0.6,3,0.8,2.2],[0.997,0.22,1.2,2.8,0.45,2],[2,0.1,0.95,2.5,0.65,1.8],[3,0.08,1.5,2.4,0.35,1.6]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}}
+    ]
+  },
+  {
+    "name":"JD Crystal Air",
+    "timbres":[
+      {"on":true,"volume":0.55,"pan":-0.15,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"JD Wire Pluck","algorithm":80,"feedback":0.03,"operators":[[1,0.65,0.003,1.3,0,0.55],[2.002,0.16,0.003,0.8,0,0.35],[3.002,0.18,0.002,0.45,0,0.22],[5.41,0.22,0.002,0.13,0,0.1],[1.003,0.24,0.003,0.8,0,0.4],[3.009,0.3,0.002,0.18,0,0.12],[7.07,0.03,0.002,0.08,0,0.05],[2.414,0.17,0.002,0.04,0,0.03]]}},
+      {"on":true,"volume":0.4,"pan":0.25,"transpose":12,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"JD Bell Mist","algorithm":72,"feedback":0.03,"operators":[[1,0.62,0.003,2.8,0,1.3],[2.01,0.24,0.002,1.5,0,0.6],[2.001,0.22,0.004,2.3,0,1.1],[3.51,0.24,0.002,0.9,0,0.5],[3.997,0.1,0.003,1.2,0,0.65],[1.414,0.12,0.002,0.5,0,0.3],[1.003,0.18,0.7,2,0.45,1.5],[1.003,0.09,1.3,2,0.4,1.6]]}},
+      {"on":true,"volume":0.85,"pan":-0.55,"transpose":0,"detune":-4,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"JD Silk Pad","algorithm":72,"feedback":0.04,"operators":[[1,0.48,0.22,2.6,0.8,1.8],[1,0.2,0.55,2.8,0.5,1.7],[1.004,0.4,0.4,2.8,0.8,2],[2.008,0.14,0.85,2.6,0.45,1.9],[0.997,0.36,0.6,3,0.8,2.2],[0.997,0.22,1.2,2.8,0.45,2],[2,0.1,0.95,2.5,0.65,1.8],[3,0.08,1.5,2.4,0.35,1.6]]}},
+      {"on":true,"volume":0.6,"pan":0.55,"transpose":0,"detune":4,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"JD Air Choir","algorithm":72,"feedback":0.03,"operators":[[1,0.5,0.45,2.5,0.8,1.8],[1,0.08,0.65,2,0.65,1.8],[2.002,0.22,0.65,2.8,0.7,2],[0.5,0.11,0.9,2.5,0.6,1.9],[3.004,0.14,0.8,2.5,0.65,1.9],[1.001,0.2,1.1,2.8,0.5,1.8],[5.002,0.07,1.2,2.8,0.55,2.1],[2.001,0.12,1.5,2.5,0.45,1.9]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}}
+    ]
+  },
+  {
+    "name":"JD Wide Horizon",
+    "timbres":[
+      {"on":true,"volume":0.68,"pan":-0.7,"transpose":0,"detune":-5,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"JD Sweep Strings","algorithm":72,"feedback":0.08,"operators":[[1,0.48,0.35,3,0.85,1.8],[1,0.5,1.6,2.4,0.25,1.3],[1.006,0.4,0.45,3,0.8,2],[1.006,0.44,1.9,2.7,0.2,1.4],[0.996,0.4,0.55,3,0.8,2.1],[0.996,0.42,2.2,2.4,0.3,1.5],[2.002,0.12,0.8,2.5,0.65,1.7],[1.001,0.2,2.6,2.2,0.2,1.3]]}},
+      {"on":true,"volume":0.68,"pan":0.7,"transpose":0,"detune":5,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"JD Sweep Strings","algorithm":72,"feedback":0.08,"operators":[[1,0.48,0.35,3,0.85,1.8],[1,0.5,1.6,2.4,0.25,1.3],[1.006,0.4,0.45,3,0.8,2],[1.006,0.44,1.9,2.7,0.2,1.4],[0.996,0.4,0.55,3,0.8,2.1],[0.996,0.42,2.2,2.4,0.3,1.5],[2.002,0.12,0.8,2.5,0.65,1.7],[1.001,0.2,2.6,2.2,0.2,1.3]]}},
+      {"on":true,"volume":0.6,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"JD Silk Pad","algorithm":72,"feedback":0.04,"operators":[[1,0.48,0.22,2.6,0.8,1.8],[1,0.2,0.55,2.8,0.5,1.7],[1.004,0.4,0.4,2.8,0.8,2],[2.008,0.14,0.85,2.6,0.45,1.9],[0.997,0.36,0.6,3,0.8,2.2],[0.997,0.22,1.2,2.8,0.45,2],[2,0.1,0.95,2.5,0.65,1.8],[3,0.08,1.5,2.4,0.35,1.6]]}},
+      {"on":true,"volume":0.35,"pan":0,"transpose":12,"detune":0,"keyLow":0,"keyHigh":84,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"JD Air Choir","algorithm":72,"feedback":0.03,"operators":[[1,0.5,0.45,2.5,0.8,1.8],[1,0.08,0.65,2,0.65,1.8],[2.002,0.22,0.65,2.8,0.7,2],[0.5,0.11,0.9,2.5,0.6,1.9],[3.004,0.14,0.8,2.5,0.65,1.9],[1.001,0.2,1.1,2.8,0.5,1.8],[5.002,0.07,1.2,2.8,0.55,2.1],[2.001,0.12,1.5,2.5,0.45,1.9]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}}
+    ]
   }
 ]
 ;
+// MIDI input for the page. Nothing here touches Web MIDI or audio, so it can run in Node tests.
+// The page passes each message's bytes to MidiRouter.receive with the input it came from.
+
+// Returns {type, channel (1–16), ...} for the messages FM–8 uses, or null for anything else.
+function parseMidi(data) {
+  const [status, a = 0, b = 0] = data;
+  if (status < 0x80 || status >= 0xf0) return null;   // running status bytes and system messages
+  const type = status >> 4, channel = (status & 15) + 1;
+  if (type === 0x9 && b > 0) return {type:"on", channel, note:a, velocity:b};
+  if (type === 0x8 || type === 0x9) return {type:"off", channel, note:a};   // note on with velocity 0 is a note off
+  if (type === 0xb) return {type:"cc", channel, controller:a, value:b};
+  if (type === 0xc) return {type:"program", channel, program:a};
+  return null;
+}
+
+// Tracks which MIDI keys are down and the sustain pedal, and calls the page:
+// strike(token, note, velocity 0–1), lift(token), silence() and program(number).
+// A token names one key on one channel of one input, so two keyboards never collide.
+class MidiRouter {
+  constructor(page) {
+    this.page = page;
+    this.channel = 0;            // 0 receives every channel
+    this.pedal = false;
+    this.sounding = new Set();   // tokens struck and not yet lifted
+    this.sustained = new Set();  // released keys the pedal is holding
+  }
+  receive(data, source = "midi") {
+    const m = parseMidi(data);
+    if (!m || (this.channel && m.channel !== this.channel)) return null;
+    const token = "midi:" + source + ":" + m.channel + ":" + m.note;
+    if (m.type === "on") {
+      // Striking a key the pedal is holding starts a fresh note.
+      if (this.sounding.has(token)) this.lift(token);
+      this.sounding.add(token);
+      this.page.strike(token, m.note, m.velocity / 127);
+    } else if (m.type === "off") {
+      if (!this.sounding.has(token)) return m;
+      if (this.pedal) this.sustained.add(token); else this.lift(token);
+    } else if (m.type === "cc" && m.controller === 64) {
+      this.pedal = m.value >= 64;
+      if (!this.pedal) for (const t of [...this.sustained]) this.lift(t);
+    } else if (m.type === "cc" && m.controller === 120) {
+      // All Sound Off: stop at once, release tails included.
+      this.sounding.clear();
+      this.sustained.clear();
+      this.page.silence();
+    } else if (m.type === "cc" && m.controller === 123) {
+      // All Notes Off: release every key, as if all were lifted with the pedal up.
+      this.releaseAll();
+    } else if (m.type === "program") {
+      this.page.program(m.program);
+    }
+    return m;
+  }
+  lift(token) {
+    this.sounding.delete(token);
+    this.sustained.delete(token);
+    this.page.lift(token);
+  }
+  // Forgets every key without calling the page, after the page has silenced everything itself.
+  reset() {
+    this.sounding.clear();
+    this.sustained.clear();
+  }
+  // Releases every key, or only those from one input (for a disconnected device).
+  releaseAll(source) {
+    const prefix = source === undefined ? "midi:" : "midi:" + source + ":";
+    for (const t of [...this.sounding]) if (t.startsWith(prefix)) this.lift(t);
+  }
+}
+
 const $=id=>document.getElementById(id);
 const clone=o=>JSON.parse(JSON.stringify(o));
 const el=(s,t)=>{const n=document.createElement(s);n.textContent=t;return n};
@@ -1013,7 +1269,7 @@ function finishDemo(){
   for(const key of Array.from(held.keys()))if(key.startsWith("demo:"))lift(key);
   $("demo").setAttribute("aria-pressed","false");$("demo").textContent="▶ フレーズ試奏";
 }
-function panic(){epoch++;finishDemo();held.clear();send({type:"silence"});paintKeys()}
+function panic(){epoch++;finishDemo();held.clear();midi.reset();send({type:"silence"});paintKeys()}
 $("stop").onclick=panic;
 for(let i=0;i<codes.length;i++){
   const b=el("button",codes[i].slice(-1));b.className="piano";b.setAttribute("aria-label",names[i]+" ("+codes[i].slice(-1)+")");
@@ -1033,8 +1289,54 @@ window.addEventListener("keydown",e=>{
   if(!e.repeat)strike(e.code,(octave+1)*12+i,e.shiftKey ? .98 : .72);
 });
 window.addEventListener("keyup",e=>lift(e.code));
-window.addEventListener("blur",panic);
-document.addEventListener("visibilitychange",()=>{if(document.hidden)panic()});
+// Leaving the window can swallow key-up events, so release computer keys and pointers.
+// MIDI keys and the demo phrase keep playing: their note-offs still arrive.
+function releaseLocalKeys(){for(const token of Array.from(held.keys()))if(!token.startsWith("midi:")&&!token.startsWith("demo:"))lift(token)}
+window.addEventListener("blur",releaseLocalKeys);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)releaseLocalKeys()});
+
+// ---------- MIDI input (Web MIDI). Note on/off with velocity, sustain pedal (CC64),
+// All Sound Off (CC120), All Notes Off (CC123) and Program Change, which picks a preset in the current mode.
+let midiAccess=null,midiBlink=0;
+const midi=new MidiRouter({
+  strike(token,note,velocity){
+    $("midiDot").classList.add("on");clearTimeout(midiBlink);midiBlink=setTimeout(()=>$("midiDot").classList.remove("on"),120);
+    strike(token,note,velocity);
+  },
+  lift,
+  silence(){held.forEach((_,token)=>{if(token.startsWith("midi:"))held.delete(token)});send({type:"silence"});paintKeys()},
+  program(n){
+    const list=mode==="program"?BANK:COMBIS;if(!list[n])return;
+    if(mode==="program")loadPatch(BANK[n],n);else loadCombi(COMBIS[n],n);
+  }
+});
+$("midiChannel").append(el("option","全チャンネル"));$("midiChannel").options[0].value=0;
+for(let c=1;c<=16;c++){const o=el("option","ch "+c);o.value=c;$("midiChannel").append(o)}
+$("midiChannel").onchange=e=>{midi.releaseAll();midi.channel=+e.target.value;e.target.blur()};
+function refreshMidiInputs(){
+  const inputs=Array.from(midiAccess.inputs.values()),select=$("midiInput"),chosen=select.value||"*";
+  select.replaceChildren(el("option","すべての入力"));select.options[0].value="*";
+  for(const input of inputs){const o=el("option",input.name||"MIDI 入力");o.value=input.id;select.append(o)}
+  select.value=inputs.some(i=>i.id===chosen)?chosen:"*";
+  for(const input of inputs)input.onmidimessage=select.value==="*"||select.value===input.id?e=>midi.receive(e.data,input.id):null;
+  $("midiStatus").textContent=inputs.length?inputs.length+" 台の MIDI 機器から受信中":"MIDI 機器が見つかりません。接続すると自動で使えます。";
+}
+$("midiInput").onchange=e=>{midi.releaseAll();refreshMidiInputs();e.target.blur()};
+$("midiEnable").onclick=async()=>{
+  if(!navigator.requestMIDIAccess){showError(Error("このブラウザーは MIDI 機器に対応していません。PC の Chrome または Edge で開いてください。"));return}
+  try{
+    // The click also starts the audio engine, since MIDI messages alone cannot.
+    await prepare();
+    midiAccess=await navigator.requestMIDIAccess();
+  }catch(e){showError(e instanceof DOMException?Error("MIDI 機器を使う許可が得られませんでした。ブラウザーのサイト設定で MIDI を許可してください。"):e);return}
+  midiAccess.onstatechange=e=>{
+    // A disconnected keyboard cannot send its note-offs, so release its keys now.
+    if(e.port.type==="input"&&e.port.state==="disconnected")midi.releaseAll(e.port.id);
+    refreshMidiInputs();
+  };
+  $("midiEnable").hidden=true;$("midiInput").hidden=false;$("midiChannel").hidden=false;$("error").textContent="";
+  refreshMidiInputs();
+};
 // Short original phrases in web/phrases.json. Each entry is [start beat, MIDI note, length in beats, velocity].
 const PHRASES=[
   {
@@ -1140,6 +1442,55 @@ const PHRASES=[
       [4.5,66,0.2,0.55],[5,66,0.2,0.65],[5,62,0.2,0.85],[5.5,66,0.2,0.55],[6,66,0.2,0.65],
       [6,60,0.2,0.9],[6.5,70,0.4,0.7],[7,62,0.2,0.85],[7.25,69,0.2,0.8],[7.5,67,0.2,0.8],
       [7.75,65,0.2,0.85],[8,72,1.2,0.85],[8,60,0.2,0.95]
+    ]
+  },
+  {
+    "name":"JD ピアノのポップリフ","suits":["JD Glass Piano","JD Stage Piano"],"beat":440,
+    "notes":[
+      [0,48,0.7,0.84],[0,60,0.7,0.78],[0,64,0.7,0.8],[0,67,0.7,0.82],
+      [1,72,0.38,0.9],[1.5,71,0.38,0.75],[2,67,0.8,0.82],[3,45,0.7,0.85],
+      [3,60,0.7,0.76],[3,64,0.7,0.78],[3,69,0.7,0.84],[4,76,0.38,0.92],
+      [4.5,74,0.38,0.8],[5,72,0.8,0.86],[6,41,0.7,0.84],[6,60,0.7,0.77],
+      [6,65,0.7,0.79],[6,69,0.7,0.83],[7,72,0.38,0.89],[7.5,69,0.38,0.75],
+      [8,43,1.7,0.86],[8,59,1.7,0.76],[8,62,1.7,0.8],[8,67,1.7,0.88]
+    ]
+  },
+  {
+    "name":"JD クリスタルのコード","suits":["JD Crystal EP"],"beat":540,
+    "notes":[
+      [0,53,2.7,0.62],[0,60,2.7,0.57],[0,64,2.7,0.6],[0,69,1.3,0.67],
+      [1.5,72,0.8,0.86],[2.5,71,0.42,0.61],[3,52,2.7,0.62],[3,59,2.7,0.55],
+      [3,62,2.7,0.58],[3,67,1.3,0.67],[4.5,71,0.8,0.88],[5.5,69,0.42,0.62],
+      [6,57,2.8,0.64],[6,60,2.8,0.57],[6,64,2.8,0.6],[6,71,2.8,0.78]
+    ]
+  },
+  {
+    "name":"JD ガラスの分散和音","suits":["JD Bell Mist","JD Wire Pluck"],"beat":380,
+    "notes":[
+      [0,60,1.4,0.76],[0.5,67,1.2,0.62],[1,71,1,0.67],[1.5,76,1.2,0.74],
+      [2,71,1,0.61],[2.5,67,0.9,0.58],[3,57,1.4,0.75],[3.5,64,1.2,0.6],
+      [4,67,1,0.66],[4.5,72,1.2,0.73],[5,67,1,0.6],[5.5,64,0.9,0.58],
+      [6,53,1.4,0.73],[6.5,60,1.2,0.6],[7,64,1,0.65],[7.5,69,1.2,0.72],
+      [8,64,1,0.61],[8.5,60,0.9,0.58],[9,55,1.8,0.75],[9,62,1.8,0.58],
+      [9,67,1.8,0.62],[9.5,74,1.6,0.72]
+    ]
+  },
+  {
+    "name":"JD 広がるレイヤー","suits":["JD Silk Pad","JD Sweep Strings","JD Air Choir","JD Crystal Air","JD Wide Horizon"],"beat":700,
+    "notes":[
+      [0,48,5.8,0.6],[0,55,5.8,0.55],[0,62,5.8,0.52],[0,64,5.8,0.56],
+      [6,45,5.8,0.6],[6,52,5.8,0.55],[6,59,5.8,0.52],[6,60,5.8,0.56],
+      [12,41,6.5,0.6],[12,48,6.5,0.54],[12,55,6.5,0.52],[12,57,6.5,0.56]
+    ]
+  },
+  {
+    "name":"JD ブラスのコード","suits":["JD Soft Brass"],"beat":430,
+    "notes":[
+      [0,55,0.6,0.73],[0,60,0.6,0.7],[0,64,0.6,0.72],[0,67,0.6,0.78],
+      [1,55,0.35,0.65],[1,60,0.35,0.63],[1,64,0.35,0.66],[1,67,0.35,0.7],
+      [1.75,57,1,0.8],[1.75,60,1,0.74],[1.75,65,1,0.76],[1.75,69,1,0.84],
+      [3.5,59,0.4,0.73],[3.5,62,0.4,0.7],[3.5,67,0.4,0.74],[3.5,71,0.4,0.8],
+      [4.25,60,2,0.82],[4.25,64,2,0.76],[4.25,67,2,0.78],[4.25,72,2,0.86]
     ]
   }
 ]
