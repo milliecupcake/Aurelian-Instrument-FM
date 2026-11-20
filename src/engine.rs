@@ -15,11 +15,17 @@ pub const WAVES: [&str; 5] = ["Sine", "Saw", "Square", "Pulse", "Triangle"];
 pub const SINE: u32 = 0;
 pub const SAW: u32 = 1;
 pub const SQUARE: u32 = 2;
-/// A pulse wave high for a quarter of each cycle.
+/// A pulse wave high for `Operator::width` of each cycle.
 pub const PULSE: u32 = 3;
 pub const TRIANGLE: u32 = 4;
-/// Each non-sine wave has band-limited tables with 1024, 512, … 1 harmonics.
+/// Pulse width limits and the width of files that do not give one.
+pub const WIDTH_MIN: f32 = 0.05;
+pub const WIDTH_MAX: f32 = 0.95;
+pub const WIDTH_DEFAULT: f32 = 0.25;
+/// Saw, square and triangle each have band-limited tables with 1024, 512, … 1 harmonics.
+/// A pulse is the difference of two saws, so it uses the saw tables.
 const LEVELS: usize = 11;
+const TABLE_WAVES: [u32; 3] = [SAW, SQUARE, TRIANGLE];
 const ROW: usize = TABLE + 1;
 /// The mod wheel at full depth swings the pitch this many semitones either way.
 pub const VIBRATO_DEPTH: f32 = 0.5;
@@ -39,11 +45,13 @@ pub struct Operator {
     pub decay: f32,
     pub sustain: f32,
     pub release: f32,
+    /// Fraction of each cycle a `PULSE` stays high, `WIDTH_MIN` to `WIDTH_MAX`. Other waves ignore it.
+    pub width: f32,
 }
 
 impl Default for Operator {
     fn default() -> Self {
-        Self { wave: SINE, ratio: 1.0, level: 0.8, attack: 0.006, decay: 0.7, sustain: 0.45, release: 0.3 }
+        Self { wave: SINE, ratio: 1.0, level: 0.8, attack: 0.006, decay: 0.7, sustain: 0.45, release: 0.3, width: WIDTH_DEFAULT }
     }
 }
 
@@ -68,14 +76,20 @@ enum Stage { Attack, Decay, Sustain, Release, End }
 struct Oscillator {
     /// Start of this operator's wave table in `Engine::tables`.
     table: usize,
+    /// Pulse only: how far ahead the second saw reads (the width) and the gain that brings the peak to 1. Zero otherwise.
+    width: f32, pulse_gain: f32,
     phase: f32, step: f32, level: f32, envelope: f32, stage: Stage,
     attack_step: f32, decay_step: f32, sustain: f32, release_samples: f32, release_step: f32,
 }
 
 impl Oscillator {
     fn new(op: Operator, hz: f32, rate: f32) -> Self {
+        let width = if op.wave == PULSE {
+            if op.width.is_finite() { op.width.clamp(WIDTH_MIN, WIDTH_MAX) } else { WIDTH_DEFAULT }
+        } else { 0.0 };
         Self {
             table: table_offset(op.wave, hz * op.ratio / rate),
+            width, pulse_gain: if width > 0.0 { 0.5 / width.max(1.0 - width) } else { 0.0 },
             phase: 0.0, step: (hz * op.ratio / rate).fract(), level: op.level,
             envelope: 0.0, stage: Stage::Attack,
             attack_step: 1.0 / (op.attack * rate).max(1.0),
@@ -113,31 +127,39 @@ impl Oscillator {
 /// Where a wave's table starts. Non-sine waves use the richest table whose
 /// harmonics all stay below half the sample rate at this frequency (cycles per sample).
 fn table_offset(wave: u32, frequency: f32) -> usize {
-    if wave == SINE || wave >= WAVES.len() as u32 { return 0; }
+    let wave = if wave == PULSE { SAW } else { wave };
+    let Some(set) = TABLE_WAVES.iter().position(|&w| w == wave) else { return 0 };
     let limit = if frequency > 0.0 { 0.5 / frequency } else { f32::INFINITY };
     let level = (0..LEVELS).find(|&l| (1024 >> l) as f32 <= limit).unwrap_or(LEVELS - 1);
-    (1 + (wave as usize - 1) * LEVELS + level) * ROW
+    (1 + set * LEVELS + level) * ROW
 }
 
-/// The sine table, then LEVELS tables for each of saw, square, pulse and triangle.
+/// Reads a table at a phase in turns, with linear interpolation.
+fn read(tables: &[f32], table: usize, turns: f32) -> f32 {
+    let position = (turns - turns.floor()) * TABLE as f32;
+    let whole = position as usize;
+    let index = table + whole % TABLE;
+    tables[index] + (tables[index + 1] - tables[index]) * (position - whole as f32)
+}
+
+/// The sine table, then LEVELS tables for each of saw, square and triangle.
 /// Each table is built from its Fourier series and scaled to a peak of 1.
 fn build_tables() -> Vec<f32> {
     let sine: Vec<f32> = (0..ROW).map(|i| (TAU * i as f32 / TABLE as f32).sin()).collect();
     let mut tables = sine.clone();
-    for wave in SAW..=TRIANGLE {
+    for wave in TABLE_WAVES {
         let mut sum = vec![0.0f64; TABLE];
         let mut levels = Vec::with_capacity(LEVELS);
         for k in 1..=1024usize {
-            // Saw: 1/k. Square: odd 1/k. Triangle: odd ±1/k². Pulse: cosines weighted by sin(kπ/4)/k.
-            let (weight, shift) = match wave {
-                SAW => (1.0 / k as f64, 0),
-                SQUARE if k % 2 == 1 => (1.0 / k as f64, 0),
-                TRIANGLE if k % 2 == 1 => (if k % 4 == 1 { 1.0 } else { -1.0 } / (k * k) as f64, 0),
-                PULSE if k % 4 != 0 => (sine[k * TABLE / 8 % TABLE] as f64 / k as f64, TABLE / 4),
-                _ => (0.0, 0),
+            // Saw: 1/k. Square: odd 1/k. Triangle: odd ±1/k².
+            let weight = match wave {
+                SAW => 1.0 / k as f64,
+                SQUARE if k % 2 == 1 => 1.0 / k as f64,
+                TRIANGLE if k % 2 == 1 => (if k % 4 == 1 { 1.0 } else { -1.0 }) / (k * k) as f64,
+                _ => 0.0,
             };
             if weight != 0.0 {
-                for (i, v) in sum.iter_mut().enumerate() { *v += weight * sine[(k * i + shift) % TABLE] as f64; }
+                for (i, v) in sum.iter_mut().enumerate() { *v += weight * sine[k * i % TABLE] as f64; }
             }
             if k.is_power_of_two() { levels.push(sum.clone()); }
         }
@@ -233,10 +255,12 @@ impl Voice {
             let mut offset = input * (6.0 / TAU);
             if i == OPS - 1 { offset += (self.history[0] + self.history[1]) * self.feedback * (2.0 / TAU); }
             let turns = op.phase + offset;
-            let position = (turns - turns.floor()) * TABLE as f32;
-            let whole = position as usize;
-            let index = op.table + whole % TABLE;
-            let sample = tables[index] + (tables[index + 1] - tables[index]) * (position - whole as f32);
+            let mut sample = read(tables, op.table, turns);
+            if op.width > 0.0 {
+                // The falling saw read `width` ahead jumps up `width` of a cycle before this one does:
+                // their difference is high for that fraction and has no DC offset.
+                sample = (read(tables, op.table, turns + op.width) - sample) * op.pulse_gain;
+            }
             values[i] = sample * op.envelope * op.level * self.velocity;
             op.phase += op.step * pitch;
             if op.phase >= 1.0 { op.phase -= op.phase.floor(); }
@@ -528,49 +552,62 @@ mod tests {
     #[test]
     fn waveforms() {
         let tables = build_tables();
-        assert_eq!(tables.len(), (1 + 4 * LEVELS) * ROW);
-        let table = |wave, level: usize| &tables[(1 + (wave as usize - 1) * LEVELS + level) * ROW..][..ROW];
-        for wave in SAW..=TRIANGLE {
+        assert_eq!(tables.len(), (1 + 3 * LEVELS) * ROW);
+        let table = |set: usize, level: usize| &tables[(1 + set * LEVELS + level) * ROW..][..ROW];
+        for (set, wave) in TABLE_WAVES.into_iter().enumerate() {
             for level in 0..LEVELS {
-                let t = table(wave, level);
+                let t = table(set, level);
                 let peak = t.iter().fold(0.0f32, |p, v| p.max(v.abs()));
                 assert!((peak - 1.0).abs() < 1e-5, "{} level {level} peaks at 1", WAVES[wave as usize]);
                 assert!(t.iter().sum::<f32>().abs() < 0.05 * TABLE as f32, "no DC offset");
                 assert_eq!(t[TABLE], t[0], "the guard sample repeats the start");
             }
             // The poorest table is a single harmonic.
-            let sine_like = table(wave, LEVELS - 1);
-            assert!(sine_like.iter().zip(&tables[..ROW]).all(|(a, b)| (a.abs() - b.abs()).abs() < 1e-4 || wave == PULSE));
+            assert!(table(set, LEVELS - 1).iter().zip(&tables[..ROW]).all(|(a, b)| (a.abs() - b.abs()).abs() < 1e-4));
         }
-        // Shapes: the square is flat, the triangle is linear, the pulse is high for a quarter cycle.
-        let square = table(SQUARE, 0);
+        // Shapes: the square is flat, the triangle is linear.
+        let square = table(1, 0);
         assert!((square[TABLE / 4] - square[TABLE / 8]).abs() < 0.15 && square[TABLE * 3 / 4] < -0.8);
-        let triangle = table(TRIANGLE, 0);
+        let triangle = table(2, 0);
         assert!((triangle[TABLE / 8] - 0.5).abs() < 0.01 && (triangle[TABLE / 4] - 1.0).abs() < 0.01);
-        let pulse = table(PULSE, 0);
-        let high = pulse.iter().take(TABLE).filter(|v| **v > 0.0).count();
-        assert!((480..=560).contains(&high), "{high}");
         // Table choice: a low note gets every harmonic, a high one fewer, so nothing passes half the rate.
         assert_eq!(table_offset(SAW, 20.0 / 48000.0), ROW, "1024 harmonics of 20 Hz reach 20.5 kHz");
         assert_eq!(table_offset(SAW, 110.0 / 48000.0), (1 + 3) * ROW, "128 harmonics of 110 Hz");
+        assert_eq!(table_offset(PULSE, 110.0 / 48000.0), (1 + 3) * ROW, "a pulse reads the saw tables");
         assert_eq!(table_offset(SQUARE, 3000.0 / 48000.0), (1 + LEVELS + 7) * ROW, "8 harmonics of 3 kHz");
         assert_eq!(table_offset(SINE, 0.3), 0);
         assert_eq!(table_offset(9, 0.01), 0, "unknown waves play a sine");
 
         // A saw A4 keeps its pitch and differs from the sine.
-        let mut e = Engine::new(48000.0);
-        pure(&mut e, 0);
-        let (mut sine, mut r) = block(4800);
-        e.on(1, 69, 1.0);
-        e.render(&mut sine, &mut r);
-        let mut s = Engine::new(48000.0);
-        pure(&mut s, 0);
-        s.programs[0].operators[0].wave = SAW;
-        let mut saw = vec![0.0; 4800];
-        s.on(1, 69, 1.0);
-        s.render(&mut saw, &mut r);
+        let play = |wave: u32, width: f32, key: u32| {
+            let mut e = Engine::new(48000.0);
+            pure(&mut e, 0);
+            e.programs[0].operators[0].wave = wave;
+            e.programs[0].operators[0].width = width;
+            let (mut l, mut r) = block(9600);
+            e.on(1, key, 1.0);
+            e.render(&mut l, &mut r);
+            l.split_off(4800)
+        };
+        let sine = play(SINE, 0.5, 69);
+        let saw = play(SAW, 0.5, 69);
         assert_eq!(crossings(&saw), crossings(&sine));
         assert_ne!(saw, sine);
+
+        // Pulse width: the share of time spent high follows the width, there is no DC offset,
+        // the pitch stays put and widths beyond the limits are clamped.
+        for width in [0.05, 0.1, 0.25, 0.5, 0.75, 0.95] {
+            let pulse = play(PULSE, width, 45);
+            let high = pulse.iter().filter(|v| **v > 0.0).count() as f32 / pulse.len() as f32;
+            assert!((high - width).abs() < 0.03, "width {width}: high {high}");
+            let mean = pulse.iter().sum::<f32>() / pulse.len() as f32;
+            assert!(mean.abs() < 0.01, "width {width}: DC {mean}");
+            // Very narrow pulses ring around zero at their low level, so count crossings only for wider ones.
+            if (0.25..=0.75).contains(&width) { assert!(crossings(&pulse).abs_diff(crossings(&play(SINE, 0.5, 45))) <= 1, "width {width}"); }
+        }
+        assert_eq!(play(PULSE, 0.0, 45), play(PULSE, WIDTH_MIN, 45));
+        assert_eq!(play(PULSE, f32::NAN, 45), play(PULSE, WIDTH_DEFAULT, 45));
+        assert_eq!(play(SAW, 0.1, 45), play(SAW, 0.9, 45), "only the pulse uses the width");
     }
 
     #[test]

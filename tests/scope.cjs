@@ -241,28 +241,30 @@ function voices(proc) { return Array.from(proc.engine.slots).filter(Boolean).map
 // Waveforms: band-limited tables, table choice by pitch, and old six-number operators still play a sine.
 {
   const tables = vm.runInContext("tables", worklet), tableOffset = vm.runInContext("tableOffset", worklet);
-  const waveOf = vm.runInContext("waveOf", worklet), ROW = 2049, LEVELS = 11;
-  assert.equal(tables.length, (1 + 4 * LEVELS) * ROW);
-  const table = (wave, level) => Array.from(tables.subarray((1 + (wave - 1) * LEVELS + level) * ROW, (2 + (wave - 1) * LEVELS + level) * ROW));
-  for (let wave = 1; wave <= 4; wave++) for (let level = 0; level < LEVELS; level++) {
-    const t = table(wave, level);
+  const waveOf = vm.runInContext("waveOf", worklet), widthOf = vm.runInContext("widthOf", worklet), ROW = 2049, LEVELS = 11;
+  // Saw, square and triangle tables. A pulse reads the saw tables.
+  assert.equal(tables.length, (1 + 3 * LEVELS) * ROW);
+  const table = (set, level) => Array.from(tables.subarray((1 + set * LEVELS + level) * ROW, (2 + set * LEVELS + level) * ROW));
+  for (let set = 0; set < 3; set++) for (let level = 0; level < LEVELS; level++) {
+    const t = table(set, level);
     assert(Math.abs(Math.max(...t.map(Math.abs)) - 1) < 1e-6);
     assert.equal(t[2048], t[0]);
   }
-  const high = table(3, 0).slice(0, 2048).filter(v => v > 0).length;
-  assert(high >= 480 && high <= 560, "the pulse is high a quarter of the time");
   assert.equal(tableOffset(1, 20 / 48000), ROW);
   assert.equal(tableOffset(1, 110 / 48000), 4 * ROW);
+  assert.equal(tableOffset(3, 110 / 48000), 4 * ROW, "pulse uses the saw tables");
   assert.equal(tableOffset(2, 3000 / 48000), (1 + LEVELS + 7) * ROW);
+  assert.equal(tableOffset(4, 20 / 48000), (1 + 2 * LEVELS) * ROW);
   assert.equal(tableOffset(0, 0.3), 0);
   assert.deepEqual([waveOf([1,1,0,0,1,0]), waveOf([1,1,0,0,1,0,3]), waveOf([1,1,0,0,1,0,9])], [0, 3, 0]);
+  assert.deepEqual([widthOf([1,1,0,0,1,0,3]), widthOf([1,1,0,0,1,0,3,0.6]), widthOf([1,1,0,0,1,0,3,0]), widthOf([1,1,0,0,1,0,3,2])], [0.25, 0.6, 0.05, 0.95]);
 
   const crossings = x => x.slice(1).filter((s, i) => x[i] <= 0 && s > 0).length;
-  const play = operator => {
+  const play = (operator, note = 69) => {
     const patch = {...sine, operators:sine.operators.map((op, i) => i === 0 ? operator(op) : op)};
     const synth = combination([part(patch, {}), ...Array.from({length:15}, () => off(sine))]);
-    start(synth, 1, 69);
-    return renderStereo(synth, 4800)[0];
+    start(synth, 1, note);
+    return renderStereo(synth, 9600)[0].slice(4800);
   };
   const plain = play(op => op.slice(0, 6));
   assert.deepEqual(play(op => [...op.slice(0, 6), 0]), plain, "wave 0 is the same sine");
@@ -271,6 +273,16 @@ function voices(proc) { return Array.from(proc.engine.slots).filter(Boolean).map
     assert.notDeepEqual(shaped, plain);
     assert(Math.abs(crossings(shaped) - crossings(plain)) <= 1, "same pitch");
   }
+  // Pulse width: the share of time spent high follows the width, with no DC offset.
+  // A file without a width plays a quarter-cycle pulse; other waves ignore the width.
+  for (const width of [0.05, 0.1, 0.25, 0.5, 0.75, 0.95]) {
+    const pulse = play(op => [...op.slice(0, 6), 3, width], 45);
+    const high = pulse.filter(v => v > 0).length / pulse.length;
+    assert(Math.abs(high - width) < 0.03, "width " + width + ": high " + high);
+    assert(Math.abs(pulse.reduce((a, b) => a + b, 0) / pulse.length) < 0.01, "width " + width);
+  }
+  assert.deepEqual(play(op => [...op.slice(0, 6), 3], 45), play(op => [...op.slice(0, 6), 3, 0.25], 45));
+  assert.deepEqual(play(op => [...op.slice(0, 6), 1, 0.1]), play(op => [...op.slice(0, 6), 1, 0.9]));
 }
 // Pitch bend and mod wheel: centred wheels change nothing, a bend moves sounding notes, vibrato keeps the average pitch.
 {
@@ -306,19 +318,19 @@ function voices(proc) { return Array.from(proc.engine.slots).filter(Boolean).map
   assert.equal(frame.algorithm, bank[4].algorithm);
 }
 // Every Program, including those inside Combinations, stays within the editor's ranges:
-// ratio, level, attack, decay, sustain, release, and the optional wave (0–4).
-const limits = [[0.25,16],[0,1],[0.002,4],[0.01,5],[0,1],[0.01,4],[0,4]];
+// ratio, level, attack, decay, sustain, release, and the optional wave (0–4) and pulse width.
+const limits = [[0.25,16],[0,1],[0.002,4],[0.01,5],[0,1],[0.01,4],[0,4],[0.05,0.95]];
 for (const p of [...bank, ...combis.flatMap(c => c.timbres.map(t => t.program))]) {
   assert(p.feedback >= 0 && p.feedback <= 1, p.name);
   p.operators.forEach(op => {
-    assert(op.length === 6 || (op.length === 7 && Number.isInteger(op[6])), p.name);
+    assert(op.length === 6 || (op.length >= 7 && op.length <= 8 && Number.isInteger(op[6])), p.name);
     op.forEach((v, j) => assert(v >= limits[j][0] && v <= limits[j][1], p.name + " " + v));
   });
 }
 // Programs 24–30 show off the new waveforms: every one uses at least one non-sine carrier,
 // and the whole set uses all four new waves.
 {
-  const waved = bank.slice(23);
+  const waved = bank.slice(23, 30);
   assert.deepEqual(waved.map(p => p.name), ["Saw Lead", "Square Bass", "Chip Pulse", "Saw Ensemble", "Triangle Flute", "Saw Brass", "Hollow Reed"]);
   for (const p of waved) assert(route(p.algorithm).carriers.some(i => (p.operators[i][6] ?? 0) > 0 && p.operators[i][1] > 0), p.name);
   assert.deepEqual([...new Set(waved.flatMap(p => p.operators.map(op => op[6] ?? 0)))].sort(), [0, 1, 2, 3, 4]);
@@ -418,4 +430,4 @@ for (const p of [...bank, ...combis.flatMap(c => c.timbres.map(t => t.program))]
   router.receive([0xb1, 121, 0], "kbd");
   assert.deepEqual(take(), [["bend", 0], ["modulation", 0], ["lift", "midi:kbd:2:60"]]);
 }
-console.log("Nine-channel scope, algorithm, phrase, combination, MIDI, pitch wheel and waveform checks passed.");
+console.log("Nine-channel scope, algorithm, phrase, combination, MIDI, pitch wheel, waveform and pulse width checks passed.");
