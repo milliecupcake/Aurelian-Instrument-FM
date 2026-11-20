@@ -6,7 +6,9 @@ const vm = require("node:vm");
 const root = path.join(__dirname, "..", "web");
 const bank = JSON.parse(fs.readFileSync(path.join(root, "presets.json"), "utf8"));
 const table = fs.readFileSync(path.join(root, "algorithms.txt"), "utf8").trim().split("\n");
-const library = fs.readFileSync(path.join(root, "algorithms.js"), "utf8").replace("__ALGORITHMS__", JSON.stringify(table));
+const combis = JSON.parse(fs.readFileSync(path.join(root, "combinations.json"), "utf8"));
+const library = ["algorithms.js", "combination.js"].map(f => fs.readFileSync(path.join(root, f), "utf8")).join("\n")
+  .replace("__ALGORITHMS__", JSON.stringify(table));
 const OPS = 8, STRIDE = OPS + 1;
 let Processor;
 
@@ -18,15 +20,16 @@ class WorkletHost {
     }};
   }
 }
-// The builder pastes algorithms.js into the worklet in the same way.
+// The builder pastes algorithms.js and combination.js into the worklet in the same way.
 const worklet = vm.createContext({
   sampleRate:48000,
   AudioWorkletProcessor:WorkletHost,
   registerProcessor:(_, implementation) => { Processor=implementation; }
 });
-vm.runInContext(fs.readFileSync(path.join(root, "processor.js"), "utf8").replace("__ALGORITHM_LIB__", library), worklet);
+vm.runInContext(fs.readFileSync(path.join(root, "processor.js"), "utf8").replace("__SHARED_LIB__", library), worklet);
 // Copy results out of the worklet's realm so deepEqual compares values only.
 const workletRoute = vm.runInContext("route", worklet), upgradePatch = vm.runInContext("upgradePatch", worklet);
+const programSetup = vm.runInContext("programSetup", worklet);
 const route = n => JSON.parse(JSON.stringify(workletRoute(n)));
 assert.equal(table.length, 88);
 assert.deepEqual(route(1).carriers, [0]);
@@ -41,10 +44,16 @@ for (const p of bank) {
 function send(proc, message) { proc.port.onmessage({data:message}); }
 function start(proc, id, note) { send(proc, {type:"on", id, note, velocity:0.8}); }
 function request(proc, count) { send(proc, {type:"scope", buffer:new ArrayBuffer(count * STRIDE * 4)}); }
+// Program mode is centred, so both channels must match. Returns the left channel.
 function render(proc, count, volume) {
-  const out = new Float32Array(count);
-  proc.process([], [[out]], {volume});
-  return out;
+  const [left, right] = renderStereo(proc, count, volume);
+  assert.deepEqual(left, right);
+  return left;
+}
+function renderStereo(proc, count, volume=full) {
+  const left = new Float32Array(count), right = new Float32Array(count);
+  proc.process([], [[left, right]], {volume});
+  return [left, right];
 }
 function readFrame(proc) {
   const frame = proc.messages.pop();
@@ -54,10 +63,10 @@ function readFrame(proc) {
 function channel(samples, index) {
   return samples.filter((_, i) => i % STRIDE === index);
 }
-function peak(samples) { return samples.reduce((p, s) => Math.max(p, Math.abs(s)), 0); }
 const full = new Float32Array([1]);
 const mute = new Float32Array([0]);
-function instrument(patch) { return new Processor({processorOptions:{patch}}); }
+function peak(samples) { return samples.reduce((p, s) => Math.max(p, Math.abs(s)), 0); }
+function instrument(patch) { return new Processor({processorOptions:{timbres:programSetup(patch)}}); }
 
 for (const algorithm of [1, 10, 42, 72, 87, 88]) {
   const {carriers} = route(algorithm);
@@ -100,7 +109,7 @@ for (let op=0; op<OPS; op++) {
 assert.notDeepEqual(channel(chord.samples, OPS), channel(one.samples, OPS));
 
 // Switching the editor does not relabel a note that is still sounding.
-send(poly, {type:"patch", patch:bank[2]});
+send(poly, {type:"setup", timbres:programSetup(bank[2])});
 request(poly, 256);
 render(poly, 128, full);
 send(poly, {type:"off", id:2});
@@ -129,7 +138,7 @@ assert.equal(peak(idle.samples), 0);
 
 // Muted operators must stay flat, including on display-buffer reuse.
 const initSine = bank.find(p => p.name === "Init Sine");
-send(poly, {type:"patch", patch:initSine});
+send(poly, {type:"setup", timbres:programSetup(initSine)});
 start(poly, 3, 60);
 send(poly, {type:"scope", buffer:tail.buffer});
 render(poly, 384, full);
@@ -160,7 +169,7 @@ for (const [old, edges] of Object.entries(oldWiring)) {
   upgraded.operators.forEach((op, i) => { if (!used.has(i)) assert.equal(op[1], 0); });
 }
 assert.equal(upgradePatch(bank[0]), bank[0], "FM–8 patches pass through unchanged");
-// Demo phrases: playable notes, and one phrase written for every preset.
+// Demo phrases: playable notes, and one phrase written for every preset and Combination.
 const phrases = JSON.parse(fs.readFileSync(path.join(root, "phrases.json"), "utf8"));
 for (const p of phrases) {
   assert(typeof p.name === "string" && p.name && p.beat > 0 && p.notes.length > 0, p.name);
@@ -168,7 +177,76 @@ for (const p of phrases) {
     assert(start >= 0 && duration > 0 && Number.isInteger(note) && note >= 0 && note <= 127, p.name);
     assert(velocity > 0 && velocity <= 1, p.name);
   }
-  for (const name of p.suits) assert(bank.some(q => q.name === name), p.name + " → " + name);
+  for (const name of p.suits) assert(bank.some(q => q.name === name) || combis.some(c => c.name === name), p.name + " → " + name);
 }
-for (const q of bank) assert(phrases.some(p => p.suits.includes(q.name)), "no phrase for " + q.name);
-console.log("Nine-channel scope, algorithm and phrase checks passed.");
+for (const q of [...bank, ...combis]) assert(phrases.some(p => p.suits.includes(q.name)), "no phrase for " + q.name);
+
+// ---- Combinations
+const ranges = vm.runInContext("TIMBRE_RANGES", worklet);
+for (const c of combis) {
+  assert.equal(c.timbres.length, 16, c.name);
+  for (const t of c.timbres) {
+    assert.equal(typeof t.on, "boolean");
+    for (const [key, [min, max, whole]] of Object.entries(ranges)) {
+      assert(t[key] >= min && t[key] <= max && (!whole || Number.isInteger(t[key])), c.name + " " + key);
+    }
+    assert(t.program.algorithm >= 1 && t.program.algorithm <= 88 && t.program.operators.length === OPS, c.name);
+  }
+}
+const combination = timbres => new Processor({processorOptions:{timbres}});
+const part = (program, settings) => ({...programSetup(program)[0], ...settings});
+const off = program => ({...programSetup(program)[1]});
+const sine = bank.find(p => p.name === "Init Sine");
+// Plain copies of the sounding voices, outside the worklet's realm.
+function voices(proc) { return Array.from(proc.engine.slots).filter(Boolean).map(v => ({id:v.id, note:v.note, timbre:v.timbre})); }
+
+// Layers: one key sounds on every timbre that is on. A repeated key ID restarts all of them.
+{
+  const synth = combination([part(bank[0], {}), part(bank[1], {}), part(sine, {}), ...Array.from({length:13}, () => off(sine))]);
+  start(synth, 1, 60);
+  assert.deepEqual(voices(synth).map(v => v.timbre).sort(), [0,1,2]);
+  start(synth, 1, 62);
+  assert.equal(voices(synth).length, 3);
+  for (let id = 2; id <= 30; id++) start(synth, id, 40 + id);
+  assert.equal(voices(synth).length, 64, "64 voices shared by every timbre");
+}
+// Zones and transpose: a split with a velocity-switched layer.
+{
+  const synth = combination([
+    part(bank[2], {keyHigh:59, transpose:-12}), part(bank[0], {keyLow:60}),
+    part(bank[1], {keyLow:60, velocityLow:100}), ...Array.from({length:13}, () => off(sine))]);
+  send(synth, {type:"on", id:1, note:48, velocity:0.72});
+  send(synth, {type:"on", id:2, note:64, velocity:0.72});
+  send(synth, {type:"on", id:3, note:67, velocity:0.98});
+  const layers = id => voices(synth).filter(v => v.id === id).map(v => [v.timbre, v.note]).sort();
+  assert.deepEqual(layers(1), [[0, 36]]);
+  assert.deepEqual(layers(2), [[1, 64]]);
+  assert.deepEqual(layers(3), [[1, 67], [2, 67]]);
+}
+// Pan, volume and detune: hard left leaves the right channel silent; 100 cents is one semitone.
+{
+  const synth = combination([part(sine, {pan:-1}), part(sine, {pan:1, volume:0.5, detune:100}), ...Array.from({length:14}, () => off(sine))]);
+  start(synth, 1, 69);
+  const [left, right] = renderStereo(synth, 4800);
+  assert(peak(left) > 0 && peak(right) > 0);
+  const solo = combination([part(sine, {pan:-1}), ...Array.from({length:15}, () => off(sine))]);
+  start(solo, 1, 69);
+  const [soloLeft, soloRight] = renderStereo(solo, 4800);
+  assert.deepEqual(left, soloLeft, "the right-panned layer adds nothing on the left");
+  assert.equal(peak(soloRight), 0);
+  const crossings = x => x.slice(1).filter((s, i) => x[i] <= 0 && s > 0).length;
+  assert.equal(crossings(soloLeft), 44, "A4 for 0.1 s");
+  assert.equal(Math.round(crossings(right) / 4800 * 48000 / 10), Math.round(466.16 / 10), "detuned a semitone up");
+}
+// The scope follows the timbre being edited and reports it.
+{
+  const synth = combination([part(bank[0], {}), part(bank[4], {}), ...Array.from({length:14}, () => off(sine))]);
+  send(synth, {type:"focus", timbre:1});
+  start(synth, 1, 60);
+  request(synth, 128);
+  renderStereo(synth, 128);
+  const frame = readFrame(synth);
+  assert.equal(frame.timbre, 1);
+  assert.equal(frame.algorithm, bank[4].algorithm);
+}
+console.log("Nine-channel scope, algorithm, phrase and combination checks passed.");

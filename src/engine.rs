@@ -1,9 +1,14 @@
 //! Eight-operator phase modulation. Operators are numbered from the output upwards.
+//!
+//! One `Patch` is a Program. The engine plays up to 16 Programs at once as the
+//! timbres of a Combination: each timbre has its own key and velocity zone, level,
+//! pan, transpose and detune. Program mode is simply timbre 1 on its own.
 use crate::algorithms::{route, Route};
 use std::f32::consts::TAU;
 
 pub const OPS: usize = 8;
-const POLYPHONY: usize = 16;
+pub const POLYPHONY: usize = 64;
+pub const TIMBRES: usize = 16;
 const TABLE: usize = 2048;
 
 #[derive(Clone, Copy)]
@@ -82,19 +87,66 @@ impl Oscillator {
     }
 }
 
+/// One part of a Combination. A key press sounds on every timbre that is on and
+/// whose key zone and velocity zone both contain it.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Timbre {
+    pub on: bool,
+    /// 0 to 1.
+    pub volume: f32,
+    /// −1 (left) to 1 (right). The centre leaves both channels at full level.
+    pub pan: f32,
+    /// Semitones added to the played key.
+    pub transpose: i32,
+    /// Cents, −100 to 100.
+    pub detune: f32,
+    pub key_low: u32,
+    pub key_high: u32,
+    /// Zones use the 1–127 MIDI velocity scale.
+    pub velocity_low: u32,
+    pub velocity_high: u32,
+}
+
+impl Default for Timbre {
+    fn default() -> Self {
+        Self { on: false, volume: 1.0, pan: 0.0, transpose: 0, detune: 0.0,
+               key_low: 0, key_high: 127, velocity_low: 1, velocity_high: 127 }
+    }
+}
+
+/// Converts a 0–1 velocity to the 1–127 scale used by velocity zones.
+pub fn velocity_127(velocity: f32) -> u32 { (velocity * 127.0).round().clamp(1.0, 127.0) as u32 }
+
+impl Timbre {
+    pub fn accepts(&self, key: u32, velocity: f32) -> bool {
+        let v = velocity_127(velocity);
+        self.on && (self.key_low..=self.key_high).contains(&key) && (self.velocity_low..=self.velocity_high).contains(&v)
+    }
+
+    /// Balance law: the far channel fades out while the near one stays at the timbre volume.
+    fn gains(&self) -> [f32; 2] {
+        let pan = self.pan.clamp(-1.0, 1.0);
+        let volume = self.volume.clamp(0.0, 1.0);
+        [volume * (1.0 - pan).min(1.0), volume * (1.0 + pan).min(1.0)]
+    }
+}
+
 struct Voice {
-    id: u32, note: u32, algorithm: u32, velocity: f32, released: bool, serial: u64,
-    ops: [Oscillator; OPS], route: Route,
+    id: u32, note: u32, algorithm: u32, timbre: usize, velocity: f32, released: bool, serial: u64,
+    ops: [Oscillator; OPS], route: Route, gains: [f32; 2],
     feedback: f32, history: [f32; 2],
 }
 
 impl Voice {
-    fn new(patch: Patch, rate: f32, id: u32, note: u32, velocity: f32, serial: u64) -> Self {
-        let hz = 440.0 * 2.0_f32.powf((note as f32 - 69.0) / 12.0);
+    fn new(patch: Patch, timbre: (usize, &Timbre), rate: f32, id: u32, key: u32, velocity: f32, serial: u64) -> Self {
+        let (index, part) = timbre;
+        let note = (key as i32 + part.transpose).clamp(0, 127) as u32;
+        let cents = part.detune.clamp(-100.0, 100.0);
+        let hz = 440.0 * 2.0_f32.powf((note as f32 - 69.0) / 12.0 + cents / 1200.0);
         let algorithm = patch.algorithm.clamp(1, crate::algorithms::COUNT);
         Self {
-            id, note, algorithm, velocity, released: false, serial, route: route(algorithm),
-            ops: patch.operators.map(|op| Oscillator::new(op, hz, rate)),
+            id, note, algorithm, timbre: index, velocity, released: false, serial, route: route(algorithm),
+            ops: patch.operators.map(|op| Oscillator::new(op, hz, rate)), gains: part.gains(),
             feedback: patch.feedback, history: [0.0; 2],
         }
     }
@@ -136,36 +188,58 @@ impl Voice {
 }
 
 pub struct Engine {
-    pub patch: Patch,
+    /// The Program each timbre plays.
+    pub programs: [Patch; TIMBRES],
+    pub timbres: [Timbre; TIMBRES],
+    /// The scope follows the newest voice of this timbre, or the newest voice of any timbre.
+    pub scope_timbre: usize,
     rate: f32, serial: u64, sine: [f32; TABLE + 1], voices: [Option<Voice>; POLYPHONY],
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ScopeVoice {
+    /// Unique per sounding voice. Layered timbres share a key ID but not this number.
+    pub serial: u64,
     pub id: u32,
+    /// The sounding note after transpose.
     pub note: u32,
     pub algorithm: u32,
+    pub timbre: usize,
 }
 
 impl Engine {
+    /// Starts in Program mode: timbre 1 is on with full zones and the rest are off.
     pub fn new(rate: f32) -> Self {
+        let mut timbres = [Timbre::default(); TIMBRES];
+        timbres[0].on = true;
         Self {
-            patch: Patch::default(), rate, serial: 0,
+            programs: [Patch::default(); TIMBRES], timbres, scope_timbre: 0, rate, serial: 0,
             sine: std::array::from_fn(|i| (TAU * i as f32 / TABLE as f32).sin()),
             voices: std::array::from_fn(|_| None),
         }
     }
 
-    pub fn on(&mut self, id: u32, note: u32, velocity: f32) {
+    /// Program mode convenience: the Program of timbre 1.
+    pub fn program(&mut self) -> &mut Patch { &mut self.programs[0] }
+
+    pub fn on(&mut self, id: u32, key: u32, velocity: f32) {
         if !velocity.is_finite() || velocity <= 0.0 { self.off(id); return; }
-        // Reuse the same event ID if present. Otherwise prefer silence, then a released voice.
-        let slot = self.voices.iter().position(|v| v.as_ref().is_some_and(|v| v.id == id))
-            .or_else(|| self.voices.iter().position(Option::is_none))
-            .unwrap_or_else(|| self.voices.iter().enumerate()
-                .min_by_key(|(_, slot)| { let v = slot.as_ref().unwrap(); (!v.released, v.serial) })
-                .unwrap().0);
-        self.serial += 1;
-        self.voices[slot] = Some(Voice::new(self.patch, self.rate, id, note.min(127), velocity.min(1.0), self.serial));
+        // A repeated key ID restarts that key on every timbre.
+        for slot in &mut self.voices {
+            if slot.as_ref().is_some_and(|v| v.id == id) { *slot = None; }
+        }
+        let key = key.min(127);
+        let velocity = velocity.min(1.0);
+        for t in 0..TIMBRES {
+            if !self.timbres[t].accepts(key, velocity) { continue; }
+            // Prefer silence, then the oldest released voice, then the oldest held voice.
+            let slot = self.voices.iter().position(Option::is_none)
+                .unwrap_or_else(|| self.voices.iter().enumerate()
+                    .min_by_key(|(_, slot)| { let v = slot.as_ref().unwrap(); (!v.released, v.serial) })
+                    .unwrap().0);
+            self.serial += 1;
+            self.voices[slot] = Some(Voice::new(self.programs[t], (t, &self.timbres[t]), self.rate, id, key, velocity, self.serial));
+        }
     }
 
     pub fn off(&mut self, id: u32) {
@@ -177,41 +251,46 @@ impl Engine {
 
     pub fn silence(&mut self) { self.voices.fill_with(|| None); }
 
-    pub fn render(&mut self, output: &mut [f32]) {
-        self.render_block(output, None);
+    pub fn render(&mut self, left: &mut [f32], right: &mut [f32]) {
+        self.render_block(left, right, None);
     }
 
     /// Eight post-envelope operator outputs per sample for one voice.
-    /// The audio output always contains the full polyphonic mix.
-    pub fn render_with_scope(&mut self, output: &mut [f32], taps: &mut [[f32; OPS]]) -> Option<ScopeVoice> {
-        assert_eq!(output.len(), taps.len());
-        self.render_block(output, Some(taps))
+    /// The audio output always contains the full polyphonic mix of every timbre.
+    pub fn render_with_scope(&mut self, left: &mut [f32], right: &mut [f32], taps: &mut [[f32; OPS]]) -> Option<ScopeVoice> {
+        assert_eq!(left.len(), taps.len());
+        self.render_block(left, right, Some(taps))
     }
 
-    fn render_block(&mut self, output: &mut [f32], mut taps: Option<&mut [[f32; OPS]]>) -> Option<ScopeVoice> {
-        let focus = taps.as_ref().and_then(|_| self.voices.iter().flatten()
-            .max_by_key(|v| (!v.released, v.serial))
-            .map(|v| ScopeVoice { id: v.id, note: v.note, algorithm: v.algorithm }));
+    fn render_block(&mut self, left: &mut [f32], right: &mut [f32], mut taps: Option<&mut [[f32; OPS]]>) -> Option<ScopeVoice> {
+        assert_eq!(left.len(), right.len());
+        let newest = |voices: &mut dyn Iterator<Item = &Voice>| voices.max_by_key(|v| (!v.released, v.serial))
+            .map(|v| ScopeVoice { serial: v.serial, id: v.id, note: v.note, algorithm: v.algorithm, timbre: v.timbre });
+        let focus = taps.as_ref().and_then(|_| {
+            let wanted = self.scope_timbre;
+            newest(&mut self.voices.iter().flatten().filter(|v| v.timbre == wanted))
+                .or_else(|| newest(&mut self.voices.iter().flatten()))
+        });
         if focus.is_none() {
             if let Some(rows) = taps.as_deref_mut() { rows.fill([0.0; OPS]); }
         }
-        output.fill(0.0);
+        left.fill(0.0);
+        right.fill(0.0);
         for slot in &mut self.voices {
             if let Some(voice) = slot {
-                if let Some(rows) = taps.as_deref_mut().filter(|_| focus.is_some_and(|f| f.id == voice.id)) {
-                    for (sample, row) in output.iter_mut().zip(rows) {
-                        let (mixed, operators) = voice.next(&self.sine);
-                        *sample += mixed;
-                        *row = operators;
-                    }
-                } else {
-                    for sample in output.iter_mut() { *sample += voice.next(&self.sine).0; }
+                let [gl, gr] = voice.gains;
+                let mut rows = taps.as_deref_mut().filter(|_| focus.is_some_and(|f| f.serial == voice.serial));
+                for n in 0..left.len() {
+                    let (mixed, operators) = voice.next(&self.sine);
+                    left[n] += mixed * gl;
+                    right[n] += mixed * gr;
+                    if let Some(rows) = rows.as_deref_mut() { rows[n] = operators; }
                 }
                 if voice.ended() { *slot = None; }
             }
         }
-        // Fixed headroom for chords, followed by a bounded soft limiter.
-        for sample in output {
+        // Fixed headroom for chords, followed by a bounded soft limiter on each channel.
+        for sample in left.iter_mut().chain(right.iter_mut()) {
             let x = *sample * 0.26;
             *sample = x / (1.0 + x.abs());
         }
@@ -222,66 +301,123 @@ impl Engine {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn block(n: usize) -> (Vec<f32>, Vec<f32>) { (vec![0.0; n], vec![0.0; n]) }
+    fn sounding(e: &Engine) -> usize { e.voices.iter().flatten().count() }
+
     #[test]
-    fn mappings_and_polyphony() {
+    fn polyphony_is_shared_by_all_timbres() {
         let mut e = Engine::new(48000.0);
-        for i in 0..17 { e.on(i, 60 + i, 0.8); }
-        assert_eq!(e.voices.iter().flatten().count(), 16);
-        assert!(e.voices.iter().flatten().all(|v| v.id != 0));
+        for i in 0..65 { e.on(i, 30 + i, 0.8); }
+        assert_eq!(sounding(&e), POLYPHONY);
+        assert!(e.voices.iter().flatten().all(|v| v.id != 0), "the oldest held voice is stolen");
         e.off(8);
-        e.on(17, 60, 0.8);
-        assert!(e.voices.iter().flatten().all(|v| v.id != 8));
+        e.on(65, 60, 0.8);
+        assert!(e.voices.iter().flatten().all(|v| v.id != 8), "a released voice goes first");
+
+        // Four layered timbres: sixteen keys fill every voice.
+        let mut layered = Engine::new(48000.0);
+        for t in 0..4 { layered.timbres[t].on = true; }
+        for i in 0..16 { layered.on(i, 40 + i, 0.8); }
+        assert_eq!(sounding(&layered), POLYPHONY);
+        layered.on(3, 70, 0.8);
+        assert_eq!(layered.voices.iter().flatten().filter(|v| v.id == 3).count(), 4, "a repeated ID restarts every layer");
+    }
+
+    #[test]
+    fn zones_select_timbres() {
+        let mut e = Engine::new(48000.0);
+        e.timbres[0] = Timbre { on: true, key_high: 59, ..Timbre::default() };
+        e.timbres[1] = Timbre { on: true, key_low: 60, ..Timbre::default() };
+        e.timbres[2] = Timbre { on: true, key_low: 60, velocity_low: 100, ..Timbre::default() };
+        e.on(1, 48, 0.72);
+        e.on(2, 64, 0.72);
+        e.on(3, 67, 0.98);
+        let parts = |id| { let mut t: Vec<_> = e.voices.iter().flatten().filter(|v| v.id == id).map(|v| v.timbre).collect(); t.sort(); t };
+        assert_eq!(parts(1), [0]);
+        assert_eq!(parts(2), [1]);
+        assert_eq!(parts(3), [1, 2]);
+        assert_eq!((velocity_127(0.72), velocity_127(0.98), velocity_127(0.001)), (91, 124, 1));
+    }
+
+    fn crossings(samples: &[f32]) -> usize { samples.windows(2).filter(|w| w[0] <= 0.0 && w[1] > 0.0).count() }
+
+    fn pure(e: &mut Engine, t: usize) {
+        e.programs[t].algorithm = 88;
+        for (i, p) in e.programs[t].operators.iter_mut().enumerate() {
+            p.level = if i == 0 { 1.0 } else { 0.0 };
+            p.sustain = 1.0;
+            p.release = 0.01;
+        }
     }
 
     #[test]
     fn pure_a4_and_release() {
         let mut e = Engine::new(48000.0);
-        e.patch.algorithm = 88;
-        for (i, p) in e.patch.operators.iter_mut().enumerate() {
-            p.level = if i == 0 { 1.0 } else { 0.0 };
-            p.sustain = 1.0;
-            p.release = 0.01;
-        }
+        pure(&mut e, 0);
         e.on(1, 69, 1.0);
-        let mut block = vec![0.0; 48000];
-        e.render(&mut block);
-        let crossings = block.windows(2).filter(|w| w[0] <= 0.0 && w[1] > 0.0).count();
-        assert!((439..=441).contains(&crossings));
+        let (mut l, mut r) = block(48000);
+        e.render(&mut l, &mut r);
+        assert!((439..=441).contains(&crossings(&l)));
+        assert_eq!(l, r, "Program mode is centred");
         e.off(1);
-        e.render(&mut block);
-        assert!(block[600..].iter().all(|s| *s == 0.0));
+        e.render(&mut l, &mut r);
+        assert!(l[600..].iter().all(|s| *s == 0.0));
         assert!(e.voices.iter().all(Option::is_none));
     }
 
     #[test]
-    fn scope_matches_the_voice_without_changing_the_mix() {
+    fn transpose_detune_and_pan() {
+        let mut e = Engine::new(48000.0);
+        pure(&mut e, 0);
+        e.timbres[0].transpose = 12;
+        e.timbres[0].pan = -1.0;
+        e.on(1, 57, 1.0); // A3 played, A4 sounds
+        let (mut l, mut r) = block(48000);
+        e.render(&mut l, &mut r);
+        assert!((439..=441).contains(&crossings(&l)));
+        assert!(r.iter().all(|s| *s == 0.0), "hard left");
+
+        let mut d = Engine::new(48000.0);
+        pure(&mut d, 0);
+        d.timbres[0].detune = 100.0; // one semitone up: 466.16 Hz
+        d.timbres[0].volume = 0.5;
+        d.timbres[0].pan = 0.5;
+        d.on(1, 69, 1.0);
+        d.render(&mut l, &mut r);
+        assert!((465..=467).contains(&crossings(&r)));
+        let peak = |s: &[f32]| s.iter().fold(0.0f32, |p, x| p.max(x.abs()));
+        assert!(peak(&l) < peak(&r), "panned right");
+    }
+
+    #[test]
+    fn scope_follows_the_chosen_timbre_without_changing_the_mix() {
+        let setup = |e: &mut Engine| {
+            e.timbres[1].on = true;
+            e.programs[1].algorithm = 87;
+            e.on(1, 60, 0.8);
+            e.programs[0].algorithm = 1;
+            e.on(2, 67, 0.7);
+        };
         let mut plain = Engine::new(48000.0);
         let mut scoped = Engine::new(48000.0);
-        for engine in [&mut plain, &mut scoped] {
-            engine.on(1, 60, 0.8);
-            engine.patch.algorithm = 88;
-            engine.on(2, 67, 0.7);
-            engine.patch.algorithm = 1;
-        }
-        let mut a = [0.0; 128];
-        let mut b = [0.0; 128];
+        setup(&mut plain);
+        setup(&mut scoped);
+        let (mut a, mut ar) = block(128);
+        let (mut b, mut br) = block(128);
         let mut taps = [[0.0; OPS]; 128];
-        let mut solo = Engine::new(48000.0);
-        solo.patch.algorithm = 88;
-        solo.on(2, 67, 0.7);
-        let mut solo_out = [0.0; 128];
-        let mut solo_taps = taps;
-        solo.render_with_scope(&mut solo_out, &mut solo_taps);
-        plain.render(&mut a);
-        let focus = scoped.render_with_scope(&mut b, &mut taps).unwrap();
-        assert_eq!((focus.note, focus.algorithm), (67, 88));
-        assert_eq!(a, b);
-        assert_eq!(taps, solo_taps);
+        plain.render(&mut a, &mut ar);
+        scoped.scope_timbre = 1;
+        let focus = scoped.render_with_scope(&mut b, &mut br, &mut taps).unwrap();
+        assert_eq!((focus.note, focus.algorithm, focus.timbre), (67, 87, 1));
+        assert_eq!((a, ar), (b.clone(), br.clone()));
         assert!(taps.iter().any(|row| row[OPS - 1].abs() > 0.01));
-        scoped.off(2);
-        assert_eq!(scoped.render_with_scope(&mut b, &mut taps).unwrap().id, 1);
+
+        scoped.scope_timbre = 5; // nothing on timbre 6: fall back to the newest voice
+        let fallback = scoped.render_with_scope(&mut b, &mut br, &mut taps).unwrap();
+        assert_eq!((fallback.id, fallback.timbre), (2, 1));
         scoped.silence();
-        assert!(scoped.render_with_scope(&mut b, &mut taps).is_none());
+        assert!(scoped.render_with_scope(&mut b, &mut br, &mut taps).is_none());
         assert_eq!(taps, [[0.0; OPS]; 128]);
     }
 
@@ -298,16 +434,16 @@ mod tests {
         // With OP8 silent, algorithm 87 is an unmodulated sine on OP1. Raising OP8 changes it.
         let render = |depth: f32| {
             let mut e = Engine::new(48000.0);
-            e.patch.algorithm = 87;
-            for (i, op) in e.patch.operators.iter_mut().enumerate() {
+            e.program().algorithm = 87;
+            for (i, op) in e.program().operators.iter_mut().enumerate() {
                 op.level = if i == 7 { depth } else if i == 0 { 1.0 } else { 0.0 };
                 op.sustain = 1.0;
             }
             e.on(1, 69, 1.0);
             let mut taps = [[0.0; OPS]; 512];
-            let mut out = [0.0; 512];
-            e.render_with_scope(&mut out, &mut taps);
-            (out, taps)
+            let (mut l, mut r) = block(512);
+            e.render_with_scope(&mut l, &mut r, &mut taps);
+            (l, taps)
         };
         let (plain, _) = render(0.0);
         let (modulated, taps) = render(0.9);

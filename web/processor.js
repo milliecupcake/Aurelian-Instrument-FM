@@ -1,40 +1,54 @@
 // Reference engine used by the ready-to-play edition. The Rust edition routes
 // the same messages into Wasm and does its entire sample loop in src/engine.rs.
-__ALGORITHM_LIB__
+__SHARED_LIB__
 const tau = 2 * Math.PI;
 const sine = Float32Array.from({length:2049}, (_, i) => Math.sin(tau * i / 2048));
 
 class PreviewEngine {
   constructor(rate) {
     this.rate = rate;
-    this.slots = Array(16).fill(null);
+    this.slots = Array(POLYPHONY).fill(null);
     this.serial = 0;
+    this.focusTimbre = 0;
     this.taps = new Float32Array(128 * OPS);
   }
-  setPatch(patch) { this.patch = patch; }
-  on(id, note, velocity) {
-    if (velocity <= 0) { this.off(id); return; }
-    let i = this.slots.findIndex(v => v && v.id === id);
-    if (i < 0) i = this.slots.indexOf(null);
-    if (i < 0) {
-      i = 0;
-      for (let k = 1; k < 16; k++) {
-        const v = this.slots[k], old = this.slots[i];
-        if ((v.released && !old.released) || (v.released === old.released && v.serial < old.serial)) i = k;
-      }
+  // setup: 16 timbres, each with its settings and a full Program.
+  setup(timbres) { this.timbres = timbres; }
+  focus(timbre) { this.focusTimbre = timbre; }
+  allocate() {
+    let i = this.slots.indexOf(null);
+    if (i >= 0) return i;
+    // Prefer the oldest released voice, then the oldest held voice.
+    i = 0;
+    for (let k = 1; k < this.slots.length; k++) {
+      const v = this.slots[k], old = this.slots[i];
+      if ((v.released && !old.released) || (v.released === old.released && v.serial < old.serial)) i = k;
     }
-    const hz = 440 * 2 ** ((note - 69) / 12);
-    const {feedback, operators} = this.patch;
-    const algorithm = Math.min(ALGORITHMS.length, Math.max(1, this.patch.algorithm));
-    this.slots[i] = {
-      id, note, algorithm, serial: ++this.serial, released:false, velocity, feedback, route:route(algorithm),
-      recent:0, older:0, values:new Float64Array(OPS),
-      ops:operators.map(([ratio, level, a, d, s, r]) => ({
-        p:0, step:(hz * ratio / this.rate) % 1, level, env:0, stage:0,
-        attack:1 / Math.max(1, a * this.rate), decay:(1-s) / Math.max(1, d * this.rate),
-        sustain:s, releaseSamples:Math.max(1, r * this.rate), release:0
-      }))
-    };
+    return i;
+  }
+  on(id, key, velocity) {
+    if (velocity <= 0) { this.off(id); return; }
+    // A repeated key ID restarts that key on every timbre.
+    for (let k = 0; k < this.slots.length; k++) if (this.slots[k]?.id === id) this.slots[k] = null;
+    key = Math.min(127, key);
+    velocity = Math.min(1, velocity);
+    this.timbres.forEach((t, timbre) => {
+      if (!timbreAccepts(t, key, velocity)) return;
+      const note = Math.min(127, Math.max(0, key + t.transpose));
+      const cents = Math.min(100, Math.max(-100, t.detune));
+      const hz = 440 * 2 ** ((note - 69) / 12 + cents / 1200);
+      const {feedback, operators} = t.program;
+      const algorithm = Math.min(ALGORITHMS.length, Math.max(1, t.program.algorithm));
+      this.slots[this.allocate()] = {
+        id, note, algorithm, timbre, serial: ++this.serial, released:false, velocity, feedback,
+        route:route(algorithm), gains:timbreGains(t), recent:0, older:0, values:new Float64Array(OPS),
+        ops:operators.map(([ratio, level, a, d, s, r]) => ({
+          p:0, step:(hz * ratio / this.rate) % 1, level, env:0, stage:0,
+          attack:1 / Math.max(1, a * this.rate), decay:(1-s) / Math.max(1, d * this.rate),
+          sustain:s, releaseSamples:Math.max(1, r * this.rate), release:0
+        }))
+      };
+    });
   }
   off(id) {
     for (const v of this.slots) {
@@ -44,24 +58,33 @@ class PreviewEngine {
     }
   }
   silence() { this.slots.fill(null); }
-  render(out, monitor) {
-    out.fill(0);
+  newest(timbre) {
+    let focus = null;
+    for (const v of this.slots) {
+      if (!v || (timbre !== undefined && v.timbre !== timbre)) continue;
+      if (!focus || (!v.released && focus.released) || (v.released === focus.released && v.serial > focus.serial)) focus = v;
+    }
+    return focus;
+  }
+  render(left, right, monitor) {
+    left.fill(0);
+    right.fill(0);
     let focus = null;
     if (monitor) {
-      for (const v of this.slots) {
-        if (v && (!focus || (!v.released && focus.released) ||
-            (v.released === focus.released && v.serial > focus.serial))) focus = v;
-      }
-      this.focusId = focus?.id ?? 0;
+      // Follow the timbre being edited. Fall back to the newest voice of any timbre.
+      focus = this.newest(this.focusTimbre) ?? this.newest();
+      this.focusId = focus?.serial ?? 0;
       this.focusNote = focus?.note ?? 0;
       this.focusAlgorithm = focus?.algorithm ?? 0;
+      this.focusTimbreShown = focus?.timbre ?? 0;
       if (!focus) this.taps.fill(0);
     }
     for (let slot=0; slot<this.slots.length; slot++) {
       const v=this.slots[slot];
       if (!v) continue;
-      const {ops,values,route}=v;
-      for(let n=0;n<out.length;n++) {
+      const {ops,values,route}=v, [gl,gr]=v.gains;
+      for(let n=0;n<left.length;n++) {
+        let mixed=0;
         for(let i=OPS-1;i>=0;i--) {
           const o=ops[i];
           if(o.stage===0) {
@@ -87,13 +110,18 @@ class PreviewEngine {
         }
         v.older=v.recent; v.recent=values[OPS-1];
         if (v === focus) this.taps.set(values, n * OPS);
-        for(let k=0;k<route.carriers.length;k++) out[n]+=values[route.carriers[k]];
+        for(let k=0;k<route.carriers.length;k++) mixed+=values[route.carriers[k]];
+        left[n]+=mixed*gl;
+        right[n]+=mixed*gr;
       }
       if(v.released && route.carriers.every(i=>ops[i].stage===4)) this.slots[slot]=null;
     }
-    for(let i=0;i<out.length;i++) {
-      const x=out[i]*0.26;
-      out[i]=x/(1+Math.abs(x));
+    // Fixed headroom for chords, followed by a bounded soft limiter on each channel.
+    for (const out of [left, right]) {
+      for(let i=0;i<out.length;i++) {
+        const x=out[i]*0.26;
+        out[i]=x/(1+Math.abs(x));
+      }
     }
   }
 }
@@ -104,27 +132,32 @@ class RustEngine {
     this.wasm.init(rate);
     this.scopePtr = this.wasm.scope_ptr();
   }
-  setPatch(patch) {
-    this.wasm.patch(patch.algorithm, patch.feedback);
-    patch.operators.forEach((op,i) => this.wasm.operator(i,...op));
+  setup(timbres) {
+    timbres.forEach((t, i) => {
+      this.wasm.timbre(i, t.on ? 1 : 0, t.volume, t.pan, t.transpose, t.detune, t.keyLow, t.keyHigh, t.velocityLow, t.velocityHigh);
+      this.wasm.patch(i, t.program.algorithm, t.program.feedback);
+      t.program.operators.forEach((op, k) => this.wasm.operator(i, k, ...op));
+    });
   }
+  focus(timbre) { this.wasm.focus(timbre); }
   on(id,n,v) { this.wasm.note_on(id,n,v); }
   off(id) { this.wasm.note_off(id); }
   silence() { this.wasm.silence(); }
-  render(out, monitor) {
-    const ptr = this.wasm.render(out.length, monitor ? 1 : 0);
+  render(left, right, monitor) {
+    const ptr = this.wasm.render(left.length, monitor ? 1 : 0);
     const memory = this.wasm.memory.buffer;
     if (!this.view || this.view.buffer !== memory || this.view.byteOffset !== ptr) {
-      this.view = new Float32Array(memory, ptr, 128);
-      this.meta = new Uint32Array(memory, this.scopePtr, 3);
-      this.taps = new Float32Array(memory, this.scopePtr + 12, 128 * OPS);
+      // 128 left samples, then 128 right samples.
+      this.view = new Float32Array(memory, ptr, 256);
+      this.meta = new Uint32Array(memory, this.scopePtr, 4);
+      this.taps = new Float32Array(memory, this.scopePtr + 16, 128 * OPS);
     }
-    if (out.length === 128) out.set(this.view);
-    else for (let i = 0; i < out.length; i++) out[i] = this.view[i];
+    for (let i = 0; i < left.length; i++) { left[i] = this.view[i]; right[i] = this.view[128 + i]; }
     if (monitor) {
       this.focusId = this.meta[0];
       this.focusNote = this.meta[1];
       this.focusAlgorithm = this.meta[2];
+      this.focusTimbreShown = this.meta[3];
     }
   }
 }
@@ -135,11 +168,14 @@ class FMProcessor extends AudioWorkletProcessor {
   }
   constructor(options) {
     super();
-    const {module, patch} = options.processorOptions;
+    const {module, timbres} = options.processorOptions;
     this.engine = module ? new RustEngine(module,sampleRate) : new PreviewEngine(sampleRate);
-    this.engine.setPatch(patch);
+    this.engine.setup(timbres);
+    this.left = new Float32Array(128);
+    this.right = new Float32Array(128);
     this.port.onmessage = ({data:m}) => {
-      if(m.type==="patch") this.engine.setPatch(m.patch);
+      if(m.type==="setup") this.engine.setup(m.timbres);
+      if(m.type==="focus") this.engine.focus(m.timbre);
       if(m.type==="on") this.engine.on(m.id,m.note,m.velocity);
       if(m.type==="off") this.engine.off(m.id);
       if(m.type==="silence") this.engine.silence();
@@ -152,8 +188,9 @@ class FMProcessor extends AudioWorkletProcessor {
     };
     this.port.postMessage("ready");
   }
-  capture(block) {
-    const {taps, focusId, focusNote, focusAlgorithm} = this.engine;
+  // The master trace is the average of the two output channels.
+  capture(left, right) {
+    const {taps, focusId, focusNote, focusAlgorithm, focusTimbreShown} = this.engine;
     const frame = this.frame;
     if (this.frameId !== focusId || this.frameAlgorithm !== focusAlgorithm) {
       // Never identify samples from two different voices as one OP trace.
@@ -164,31 +201,37 @@ class FMProcessor extends AudioWorkletProcessor {
     }
     // Each sample row holds OP1–OP8 and then the master output.
     const stride = OPS + 1;
-    const count = Math.min(block.length, frame.length / stride - this.written);
+    const count = Math.min(left.length, frame.length / stride - this.written);
     for (let n = 0; n < count; n++) {
       const base = (this.written + n) * stride;
       for (let op = 0; op < OPS; op++) frame[base + op] = taps[n * OPS + op];
-      frame[base + OPS] = block[n];
+      frame[base + OPS] = (left[n] + right[n]) / 2;
     }
     this.written += count;
     if (this.written * stride === frame.length) {
-      this.port.postMessage({type:"scope", note:focusNote, algorithm:focusAlgorithm, buffer:frame.buffer}, [frame.buffer]);
+      this.port.postMessage({type:"scope", note:focusNote, algorithm:focusAlgorithm, timbre:focusTimbreShown, buffer:frame.buffer}, [frame.buffer]);
       this.frame = null;
     }
   }
   process(inputs, outputs, parameters) {
-    const out = outputs[0][0];
-    if (!out) return true;
+    const [outLeft, outRight] = outputs[0];
+    if (!outLeft) return true;
     const volume = parameters?.volume;
-    for (let offset = 0; offset < out.length; offset += 128) {
-      const block = out.length <= 128 ? out : out.subarray(offset, offset + 128);
-      this.engine.render(block, !!this.frame);
-      if (volume?.length > 1) {
-        for (let i = 0; i < block.length; i++) block[i] *= volume[offset + i];
-      } else if (volume?.length === 1 && volume[0] !== 1) {
-        for (let i = 0; i < block.length; i++) block[i] *= volume[0];
+    for (let offset = 0; offset < outLeft.length; offset += 128) {
+      const size = Math.min(128, outLeft.length - offset);
+      const left = this.left.subarray(0, size), right = this.right.subarray(0, size);
+      this.engine.render(left, right, !!this.frame);
+      for (const out of [left, right]) {
+        if (volume?.length > 1) {
+          for (let i = 0; i < size; i++) out[i] *= volume[offset + i];
+        } else if (volume?.length === 1 && volume[0] !== 1) {
+          for (let i = 0; i < size; i++) out[i] *= volume[0];
+        }
       }
-      if (this.frame) this.capture(block);
+      outLeft.set(left, offset);
+      // A mono destination receives the left channel; a centred Program sounds the same on both.
+      if (outRight) outRight.set(right, offset);
+      if (this.frame) this.capture(left, right);
     }
     return true;
   }

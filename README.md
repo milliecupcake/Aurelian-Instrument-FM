@@ -15,9 +15,36 @@ ZIPを展開し、**Play-FM8.html** をPCのChromeまたはEdgeで開きます�
 | 全音停止 | Esc または「全音停止」 |
 | 試奏する曲 | 「フレーズ試奏」右の欄で選ぶ。演奏中に変えると止まる |
 | 配線の切り替え | 「接続」の番号欄、または ‹ › で01〜88を選ぶ |
-| 音色の保存・再利用 | 「音色を書き出す」でJSONを保存し、「音色を読み込む」で復元。FM–6で書き出した .fm6.json もそのまま読み込めます |
+| ProgramとCombinationの切り替え | 画面左上の PROGRAM ／ COMBI |
+| 音色の保存・再利用 | 「音色を書き出す」でJSONを保存し、「音色を読み込む」で復元。Programは .fm8.json、Combinationは .fm8combi.json。読み込むとファイルに合わせてモードが切り替わります。FM–6で書き出した .fm6.json もそのまま読み込めます |
 
 マウスでも鍵盤を弾けます。設定変更は次の打鍵から効き、鳴っている音には打鍵時の設定が残ります。音量は演奏中にも変えられます。プリセットを切り替える前に、残したい編集をファイルへ書き出してください。
+
+## Combination
+
+COMBIにすると、16個のTimbreを重ねたり鍵域で分けたりして鳴らせます。KORGのCombinationと同じ考え方で、Timbreごとに1つのProgram（8オペレーターの音色）を受け持ちます。1つの鍵で、Onで、かつ鍵域とベロシティの範囲に入ったTimbreがすべて同時に鳴ります。
+
+| 設定 | 範囲 | 働き |
+| --- | --- | --- |
+| On | オン／オフ | オフのTimbreは鳴らない |
+| Program | 音色 | プリセットから選ぶと、そのTimbreに音色を丸ごと複写する |
+| Volume | 0〜100 | Timbreの音量 |
+| Pan | L100〜C〜R100 | 中央では左右とも元の音量。片側へ振ると反対側だけが小さくなる |
+| Transpose | −24〜＋24 | 押した鍵から何半音ずらして鳴らすか |
+| Detune | −100〜＋100 | セント単位の音程の微調整。100で1半音 |
+| Key zone | C−1〜G9 | 鳴らす鍵の範囲。判定は押した鍵で行い、Transpose前の音名で指定する |
+| Velocity zone | 1〜127 | 鳴らす強さの範囲。通常打鍵は91、Shift打鍵は124 |
+
+Timbre表左端の番号ボタンを押すと、そのTimbreのProgramを接続・音色編集の欄で編集できます。編集はCombinationの中の複写だけを変え、プリセットや他のCombinationには影響しません。波形モニターは、編集中のTimbreの最も新しい音を追います。
+
+| Combination | 内容 |
+| --- | --- |
+| EP + Bell Layer | Transit EPに、1オクターブ上のAurelian Bellを重ねる。ベルはShift打鍵（ベロシティ100以上）のときだけ鳴る |
+| Bass / EP Split | B3以下でDiesel Bass、C4以上でTransit EP。Octの −／＋ で鳴らす側を切り替える |
+| Organ + Choir | Drawbar OrganとGlass Choirを左右に少し振って重ねる |
+| Wide Bell | 左右に振って少しずらした2つのAurelian Bellと、1オクターブ下のGlass Choir |
+
+同時発音数はすべてのTimbreで共有の64音です。足りなくなると、リリース中の最古の声、その次に打鍵時刻の最も古い声を再利用します。出力はステレオです。PROGRAMではTimbre 1だけを中央で鳴らすので、音は左右で同じです。
 
 ## 波形モニター
 
@@ -102,7 +129,7 @@ Transit EP、Aurelian Bell、Diesel Bass、Init Sine はFM–6から移した音
 | 木構造 | 78 | 各OPは1つのOPだけを変調する。最大4段、1つのOPへの変調は2つまで、枝分かれは2か所まで |
 | 共有モジュレーター | 10 | OP8が、OP1〜OP7で作った3〜7本の並列スタック（各4段まで）をまとめて変調する |
 
-いずれもOP8は自分自身へフィードバックできます。16音が使用中なら、リリース中の最古の声、その次に打鍵時刻の最も古い声を再利用します。PC鍵盤の通常打鍵とShift打鍵には異なるベロシティを割り当てています。
+いずれもOP8は自分自身へフィードバックできます。64音が使用中なら、リリース中の最古の声、その次に打鍵時刻の最も古い声を再利用します。PC鍵盤の通常打鍵とShift打鍵には異なるベロシティを割り当てています。
 
 FM–8は、8オペレーター・88アルゴリズムという規模を参考にした独自の配線表です。特定の機種のアルゴリズム表を再現したものではありません。エンベロープは秒単位の線形ADSRです。プリセットはオリジナルです。SysEx音色の読み込み、MIDI機器入力、DAWプラグイン、実機の量子化特性の再現は未実装です。
 
@@ -112,11 +139,13 @@ FM–8は、8オペレーター・88アルゴリズムという規模を参考�
 | --- | --- |
 | web/algorithms.txt | 88通りの配線表。Rust音源とブラウザーの両方がこの1つを読む |
 | src/algorithms.rs | 配線表の読み込みと、88通りが正しく重複しないことのテスト |
-| src/engine.rs | ボイス割り当て、位相変調、エンベロープ、音声ブロック生成、テスト |
+| src/engine.rs | 16個のTimbre、64音のボイス割り当て、位相変調、エンベロープ、ステレオの音声ブロック生成、テスト |
 | src/lib.rs | Rust音源をWebAssemblyから操作する入口 |
 | examples/first_patch.rs | Rust音源を直接呼んでWAVへ書く最小の聴き比べ |
 | web/presets.json | 音色。8つのOPそれぞれの配列は周波数比、レベル、Attack秒、Decay秒、Sustain、Release秒の順 |
 | web/algorithms.js | 配線表の解釈とFM–6音色の変換。画面とAudioWorkletの両方に埋め込む |
+| web/combination.js | Timbreの既定値、範囲、鍵域とベロシティの判定、パン。画面とAudioWorkletの両方に埋め込む |
+| web/combinations.json | Combinationのプリセット。16個のTimbreそれぞれに設定とProgramを丸ごと持つ |
 | web/phrases.json | 試奏フレーズ。各音は開始拍、MIDIノート番号、長さ（拍）、ベロシティの順。`beat` は1拍のミリ秒、`suits` は合わせるプリセット名 |
 | web/instrument.html | 日本語の操作画面、パッチの保存、鍵盤と試奏フレーズ |
 | web/processor.js | AudioWorklet、Rust音源との接続、準備不要の試奏版用音源 |

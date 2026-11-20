@@ -29,10 +29,11 @@ fn build() -> io::Result<()> {
         .map(|line| format!("\"{line}\"")).collect();
     let page = include_str!("../../web/instrument.html")
         .replace("__WORKLET__", include_str!("../../web/processor.js"))
-        .replace("__ALGORITHM_LIB__", include_str!("../../web/algorithms.js"))
+        .replace("__SHARED_LIB__", &[include_str!("../../web/algorithms.js"), include_str!("../../web/combination.js")].join("\n"))
         .replace("__ALGORITHMS__", &format!("[{}]", table.join(",")))
         .replace("__PATCHES__", include_str!("../../web/presets.json"))
-        .replace("__PHRASES__", include_str!("../../web/phrases.json"));
+        .replace("__PHRASES__", include_str!("../../web/phrases.json"))
+        .replace("__COMBINATIONS__", include_str!("../../web/combinations.json"));
     // Play-FM8.html runs the JavaScript reference engine and needs no build tools to open.
     fs::write(root.join("Play-FM8.html"), page.replace("__WASM_BASE64__", ""))?;
     let dest = root.join("Aurelian-FM8.html");

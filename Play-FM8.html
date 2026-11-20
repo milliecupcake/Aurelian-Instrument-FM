@@ -18,7 +18,9 @@ main{max-width:1140px;margin:0 auto;padding:22px 32px 24px}
 
 .screen{display:flex;flex-direction:column;justify-content:space-between;gap:10px}
 .algo{align-items:center}.algo select{height:28px;border:1px solid var(--line);border-radius:4px;background:var(--panel);font:600 12px var(--mono);padding:0 4px}.algo button{min-width:28px}
-.screen-foot{flex-wrap:wrap}.screen-foot select{flex:1 1 130px;height:34px;min-width:0;max-width:100%;border:1px solid #79907c;border-radius:4px;background:transparent;color:#e0e8d3;font-size:12px;padding:0 6px}
+.screen-foot{flex-wrap:wrap}.mode{display:flex;gap:3px}.mode button{height:22px;padding:0 8px;font:600 10px var(--mono);letter-spacing:.1em;background:transparent;color:#adc4ad;border-color:#56705f}.mode button[aria-pressed=true]{background:#e1e9ca;color:var(--ink);border-color:#e1e9ca}
+/* Grid children may shrink, so the wide Timbre table scrolls inside its own box. */.deck>*{min-width:0}.combi .section-title{gap:10px;flex-wrap:wrap}.combi-hint{font-size:11px;color:var(--soft)}.timbre-wrap{overflow-x:auto;margin-top:10px}.timbres{border-collapse:collapse;width:100%;min-width:860px;font-size:12px}.timbres th{font:600 10px var(--mono);letter-spacing:.06em;color:#53695e;text-align:left;padding:0 5px 5px;white-space:nowrap}.timbres td{padding:2px 5px;border-top:1px solid #d9dccd;white-space:nowrap}.timbres tr.off td:not(:first-child):not(:nth-child(2)){opacity:.45}.timbres tr.editing td{background:#e6e9da}.timbres button{height:24px;min-width:34px;font:600 11px var(--mono)}.timbres select,.timbres input[type=number]{font:12px var(--mono);height:24px;border:1px solid var(--line);border-radius:3px;background:#fbfaf3}.timbres select.program{width:150px}.timbres input[type=number]{width:52px}.timbres input[type=range]{width:74px;vertical-align:middle}.timbres output{display:inline-block;width:34px;font:11px var(--mono);text-align:right}.timbres .dash{margin:0 3px;color:#6d7d70}
+.screen-foot select{flex:1 1 130px;height:34px;min-width:0;max-width:100%;border:1px solid #79907c;border-radius:4px;background:transparent;color:#e0e8d3;font-size:12px;padding:0 6px}
 .routing{display:block;position:relative;height:auto;margin:8px 0 3px}.routing svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}.routing path{fill:none;stroke:#8d9c8d;stroke-width:1}.routing path.bus{stroke:#859a86;stroke-width:2}.routing .node{position:absolute;transform:translate(-50%,-50%)}
 .monitor{padding:14px 16px;background:#172e29;color:#e2e7cf;border-color:#11251f}
 .monitor-head{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:7px 15px;margin-bottom:12px}
@@ -37,19 +39,23 @@ main{max-width:1140px;margin:0 auto;padding:22px 32px 24px}
 @media(max-width:480px){.scope-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.monitor-tools{gap:8px}.monitor-head{align-items:flex-start}.trace{padding:6px}.trace canvas{height:36px}.master canvas{height:50px}}
 </style></head><body><main>
 <div class="mast"><div class="identity"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>AURELIAN INSTRUMENTS</div><div class="status" role="status"><i class="dot" id="dot"></i><span id="status">音源待機中</span></div></div>
-<div class="title"><div class="headline"><h1>FM<span>–</span>8</h1><div class="descriptor">Phase Modulation<br>Synthesizer</div></div><div class="device">8 OPERATORS &nbsp;/&nbsp; 88 ALGORITHMS &nbsp;/&nbsp; 16 VOICES</div></div>
+<div class="title"><div class="headline"><h1>FM<span>–</span>8</h1><div class="descriptor">Phase Modulation<br>Synthesizer</div></div><div class="device">8 OPERATORS &nbsp;/&nbsp; 88 ALGORITHMS &nbsp;/&nbsp; 16 TIMBRES &nbsp;/&nbsp; 64 VOICES</div></div>
 <div class="deck">
 <div class="top-grid">
-<section class="screen" aria-label="音色と演奏"><div class="screen-top"><span class="small">Voice memory</span><span class="patch-index" id="patchIndex"></span></div>
+<section class="screen" aria-label="音色と演奏"><div class="screen-top"><div class="mode" role="group" aria-label="モード"><button id="modeProgram" aria-pressed="true">PROGRAM</button><button id="modeCombi" aria-pressed="false">COMBI</button></div><span class="patch-index" id="patchIndex"></span></div>
 <div class="preset-select"><select id="preset" aria-label="プリセット音色"></select></div>
 <div class="screen-foot"><button id="demo" class="play" aria-pressed="false">▶ フレーズ試奏</button><button id="stop">全音停止</button><select id="phrase" aria-label="試奏する曲"></select></div></section>
 <section class="module"><div class="section-title"><h2>接続 <span class="small">Algorithm</span></h2><div class="algo"><button id="algoPrev" aria-label="前のアルゴリズム">‹</button><select id="algorithm" aria-label="アルゴリズム番号"></select><button id="algoNext" aria-label="次のアルゴリズム">›</button></div></div><div class="routing" id="routing" aria-label="オペレーター接続図。上から下へ変調"></div>
 <div class="route-foot"><label for="feedback">OP8 Feedback</label><input type="range" id="feedback" min="0" max="1" step=".01"><output id="fbVal" for="feedback"></output><span class="out" id="carriers"></span></div></section>
 </div>
+<section class="module combi" id="combi" aria-labelledby="combi-heading" hidden>
+<div class="section-title"><h2 id="combi-heading">Timbre <span class="small">Combination</span></h2><span class="combi-hint">番号ボタンで、そのTimbreのProgramを下の音色編集で編集します。ゾーンに入った鍵で、Onのすべてが同時に鳴ります。</span></div>
+<div class="timbre-wrap"><table class="timbres"><thead><tr><th>T</th><th>On</th><th>Program</th><th>Volume</th><th>Pan</th><th>Transpose</th><th>Detune (cent)</th><th>Key zone</th><th>Velocity zone</th></tr></thead><tbody id="timbres"></tbody></table></div>
+</section>
 <section class="module monitor" aria-labelledby="scope-heading">
 <div class="monitor-head"><h2 id="scope-heading">波形モニター</h2><div class="monitor-tools"><span class="monitor-note" id="scope-note">表示音 —</span><span>横幅 12 ms</span><label>縦倍率<select id="scope-zoom"><option value="1">×1</option><option value="2">×2</option><option value="4">×4</option></select></label></div></div>
 <div class="scope-grid" id="scope-grid"></div>
-<p class="monitor-caption">OP1〜8 は最後に押した鍵の波形。最終出力には和音とリリース中の余韻も含まれます。</p>
+<p class="monitor-caption">OP1〜8 は最後に押した鍵の波形（Combination では編集中の Timbre）。最終出力には和音とリリース中の余韻も含まれます。</p>
 </section>
 <section class="module"><div class="editor-head"><h2>音色編集 <span class="role" id="role"></span></h2><div class="edit-tabs" id="operators" aria-label="編集するオペレーター"></div></div><div class="params" id="params"></div><p class="edit-foot" id="editHint"></p></section>
 <section class="module"><div class="key-head"><h2>鍵盤 <span class="small">Keyboard</span></h2><div class="key-controls"><span>Oct</span><button id="octDown" aria-label="1オクターブ下げる">−</button><output id="octave"></output><button id="octUp" aria-label="1オクターブ上げる">＋</button><label for="gain" class="gain-control">音量</label><input type="range" id="gain" min="0" max="1" step=".01" value=".65"></div></div><div id="keys" class="keys" aria-label="演奏鍵盤"></div><div class="key-foot"><span>A〜K で演奏 ／ W・E・T・Y・U が黒鍵</span><span>Shift で強く弾く</span></div></section>
@@ -90,40 +96,80 @@ function upgradePatch(p) {
   return {...p, algorithm, operators};
 }
 
+// Shared by the page and the AudioWorklet, after algorithms.js.
+// A Combination holds 16 timbres. Each timbre carries a full Program (an FM–8
+// patch) and the settings below. Program mode is timbre 1 on its own.
+const TIMBRES = 16;
+const POLYPHONY = 64;
+const TIMBRE_DEFAULTS = {on:false, volume:1, pan:0, transpose:0, detune:0, keyLow:0, keyHigh:127, velocityLow:1, velocityHigh:127};
+// [minimum, maximum, whole numbers only]
+const TIMBRE_RANGES = {
+  volume:[0,1,false], pan:[-1,1,false], transpose:[-24,24,true], detune:[-100,100,false],
+  keyLow:[0,127,true], keyHigh:[0,127,true], velocityLow:[1,127,true], velocityHigh:[1,127,true]
+};
+// Velocity zones use the 1–127 MIDI scale. The engine works with 0–1.
+function velocity127(velocity) { return Math.min(127, Math.max(1, Math.round(velocity * 127))); }
+function timbreAccepts(t, key, velocity) {
+  const v = velocity127(velocity);
+  return t.on && key >= t.keyLow && key <= t.keyHigh && v >= t.velocityLow && v <= t.velocityHigh;
+}
+// Balance law: the far channel fades out while the near one stays at the timbre volume.
+function timbreGains(t) {
+  const pan = Math.min(1, Math.max(-1, t.pan)), volume = Math.min(1, Math.max(0, t.volume));
+  return [volume * Math.min(1, 1 - pan), volume * Math.min(1, 1 + pan)];
+}
+function programSetup(program) {
+  return Array.from({length:TIMBRES}, (_, i) => ({...TIMBRE_DEFAULTS, on:i === 0, program}));
+}
+
 const tau = 2 * Math.PI;
 const sine = Float32Array.from({length:2049}, (_, i) => Math.sin(tau * i / 2048));
 
 class PreviewEngine {
   constructor(rate) {
     this.rate = rate;
-    this.slots = Array(16).fill(null);
+    this.slots = Array(POLYPHONY).fill(null);
     this.serial = 0;
+    this.focusTimbre = 0;
     this.taps = new Float32Array(128 * OPS);
   }
-  setPatch(patch) { this.patch = patch; }
-  on(id, note, velocity) {
-    if (velocity <= 0) { this.off(id); return; }
-    let i = this.slots.findIndex(v => v && v.id === id);
-    if (i < 0) i = this.slots.indexOf(null);
-    if (i < 0) {
-      i = 0;
-      for (let k = 1; k < 16; k++) {
-        const v = this.slots[k], old = this.slots[i];
-        if ((v.released && !old.released) || (v.released === old.released && v.serial < old.serial)) i = k;
-      }
+  // setup: 16 timbres, each with its settings and a full Program.
+  setup(timbres) { this.timbres = timbres; }
+  focus(timbre) { this.focusTimbre = timbre; }
+  allocate() {
+    let i = this.slots.indexOf(null);
+    if (i >= 0) return i;
+    // Prefer the oldest released voice, then the oldest held voice.
+    i = 0;
+    for (let k = 1; k < this.slots.length; k++) {
+      const v = this.slots[k], old = this.slots[i];
+      if ((v.released && !old.released) || (v.released === old.released && v.serial < old.serial)) i = k;
     }
-    const hz = 440 * 2 ** ((note - 69) / 12);
-    const {feedback, operators} = this.patch;
-    const algorithm = Math.min(ALGORITHMS.length, Math.max(1, this.patch.algorithm));
-    this.slots[i] = {
-      id, note, algorithm, serial: ++this.serial, released:false, velocity, feedback, route:route(algorithm),
-      recent:0, older:0, values:new Float64Array(OPS),
-      ops:operators.map(([ratio, level, a, d, s, r]) => ({
-        p:0, step:(hz * ratio / this.rate) % 1, level, env:0, stage:0,
-        attack:1 / Math.max(1, a * this.rate), decay:(1-s) / Math.max(1, d * this.rate),
-        sustain:s, releaseSamples:Math.max(1, r * this.rate), release:0
-      }))
-    };
+    return i;
+  }
+  on(id, key, velocity) {
+    if (velocity <= 0) { this.off(id); return; }
+    // A repeated key ID restarts that key on every timbre.
+    for (let k = 0; k < this.slots.length; k++) if (this.slots[k]?.id === id) this.slots[k] = null;
+    key = Math.min(127, key);
+    velocity = Math.min(1, velocity);
+    this.timbres.forEach((t, timbre) => {
+      if (!timbreAccepts(t, key, velocity)) return;
+      const note = Math.min(127, Math.max(0, key + t.transpose));
+      const cents = Math.min(100, Math.max(-100, t.detune));
+      const hz = 440 * 2 ** ((note - 69) / 12 + cents / 1200);
+      const {feedback, operators} = t.program;
+      const algorithm = Math.min(ALGORITHMS.length, Math.max(1, t.program.algorithm));
+      this.slots[this.allocate()] = {
+        id, note, algorithm, timbre, serial: ++this.serial, released:false, velocity, feedback,
+        route:route(algorithm), gains:timbreGains(t), recent:0, older:0, values:new Float64Array(OPS),
+        ops:operators.map(([ratio, level, a, d, s, r]) => ({
+          p:0, step:(hz * ratio / this.rate) % 1, level, env:0, stage:0,
+          attack:1 / Math.max(1, a * this.rate), decay:(1-s) / Math.max(1, d * this.rate),
+          sustain:s, releaseSamples:Math.max(1, r * this.rate), release:0
+        }))
+      };
+    });
   }
   off(id) {
     for (const v of this.slots) {
@@ -133,24 +179,33 @@ class PreviewEngine {
     }
   }
   silence() { this.slots.fill(null); }
-  render(out, monitor) {
-    out.fill(0);
+  newest(timbre) {
+    let focus = null;
+    for (const v of this.slots) {
+      if (!v || (timbre !== undefined && v.timbre !== timbre)) continue;
+      if (!focus || (!v.released && focus.released) || (v.released === focus.released && v.serial > focus.serial)) focus = v;
+    }
+    return focus;
+  }
+  render(left, right, monitor) {
+    left.fill(0);
+    right.fill(0);
     let focus = null;
     if (monitor) {
-      for (const v of this.slots) {
-        if (v && (!focus || (!v.released && focus.released) ||
-            (v.released === focus.released && v.serial > focus.serial))) focus = v;
-      }
-      this.focusId = focus?.id ?? 0;
+      // Follow the timbre being edited. Fall back to the newest voice of any timbre.
+      focus = this.newest(this.focusTimbre) ?? this.newest();
+      this.focusId = focus?.serial ?? 0;
       this.focusNote = focus?.note ?? 0;
       this.focusAlgorithm = focus?.algorithm ?? 0;
+      this.focusTimbreShown = focus?.timbre ?? 0;
       if (!focus) this.taps.fill(0);
     }
     for (let slot=0; slot<this.slots.length; slot++) {
       const v=this.slots[slot];
       if (!v) continue;
-      const {ops,values,route}=v;
-      for(let n=0;n<out.length;n++) {
+      const {ops,values,route}=v, [gl,gr]=v.gains;
+      for(let n=0;n<left.length;n++) {
+        let mixed=0;
         for(let i=OPS-1;i>=0;i--) {
           const o=ops[i];
           if(o.stage===0) {
@@ -176,13 +231,18 @@ class PreviewEngine {
         }
         v.older=v.recent; v.recent=values[OPS-1];
         if (v === focus) this.taps.set(values, n * OPS);
-        for(let k=0;k<route.carriers.length;k++) out[n]+=values[route.carriers[k]];
+        for(let k=0;k<route.carriers.length;k++) mixed+=values[route.carriers[k]];
+        left[n]+=mixed*gl;
+        right[n]+=mixed*gr;
       }
       if(v.released && route.carriers.every(i=>ops[i].stage===4)) this.slots[slot]=null;
     }
-    for(let i=0;i<out.length;i++) {
-      const x=out[i]*0.26;
-      out[i]=x/(1+Math.abs(x));
+    // Fixed headroom for chords, followed by a bounded soft limiter on each channel.
+    for (const out of [left, right]) {
+      for(let i=0;i<out.length;i++) {
+        const x=out[i]*0.26;
+        out[i]=x/(1+Math.abs(x));
+      }
     }
   }
 }
@@ -193,27 +253,32 @@ class RustEngine {
     this.wasm.init(rate);
     this.scopePtr = this.wasm.scope_ptr();
   }
-  setPatch(patch) {
-    this.wasm.patch(patch.algorithm, patch.feedback);
-    patch.operators.forEach((op,i) => this.wasm.operator(i,...op));
+  setup(timbres) {
+    timbres.forEach((t, i) => {
+      this.wasm.timbre(i, t.on ? 1 : 0, t.volume, t.pan, t.transpose, t.detune, t.keyLow, t.keyHigh, t.velocityLow, t.velocityHigh);
+      this.wasm.patch(i, t.program.algorithm, t.program.feedback);
+      t.program.operators.forEach((op, k) => this.wasm.operator(i, k, ...op));
+    });
   }
+  focus(timbre) { this.wasm.focus(timbre); }
   on(id,n,v) { this.wasm.note_on(id,n,v); }
   off(id) { this.wasm.note_off(id); }
   silence() { this.wasm.silence(); }
-  render(out, monitor) {
-    const ptr = this.wasm.render(out.length, monitor ? 1 : 0);
+  render(left, right, monitor) {
+    const ptr = this.wasm.render(left.length, monitor ? 1 : 0);
     const memory = this.wasm.memory.buffer;
     if (!this.view || this.view.buffer !== memory || this.view.byteOffset !== ptr) {
-      this.view = new Float32Array(memory, ptr, 128);
-      this.meta = new Uint32Array(memory, this.scopePtr, 3);
-      this.taps = new Float32Array(memory, this.scopePtr + 12, 128 * OPS);
+      // 128 left samples, then 128 right samples.
+      this.view = new Float32Array(memory, ptr, 256);
+      this.meta = new Uint32Array(memory, this.scopePtr, 4);
+      this.taps = new Float32Array(memory, this.scopePtr + 16, 128 * OPS);
     }
-    if (out.length === 128) out.set(this.view);
-    else for (let i = 0; i < out.length; i++) out[i] = this.view[i];
+    for (let i = 0; i < left.length; i++) { left[i] = this.view[i]; right[i] = this.view[128 + i]; }
     if (monitor) {
       this.focusId = this.meta[0];
       this.focusNote = this.meta[1];
       this.focusAlgorithm = this.meta[2];
+      this.focusTimbreShown = this.meta[3];
     }
   }
 }
@@ -224,11 +289,14 @@ class FMProcessor extends AudioWorkletProcessor {
   }
   constructor(options) {
     super();
-    const {module, patch} = options.processorOptions;
+    const {module, timbres} = options.processorOptions;
     this.engine = module ? new RustEngine(module,sampleRate) : new PreviewEngine(sampleRate);
-    this.engine.setPatch(patch);
+    this.engine.setup(timbres);
+    this.left = new Float32Array(128);
+    this.right = new Float32Array(128);
     this.port.onmessage = ({data:m}) => {
-      if(m.type==="patch") this.engine.setPatch(m.patch);
+      if(m.type==="setup") this.engine.setup(m.timbres);
+      if(m.type==="focus") this.engine.focus(m.timbre);
       if(m.type==="on") this.engine.on(m.id,m.note,m.velocity);
       if(m.type==="off") this.engine.off(m.id);
       if(m.type==="silence") this.engine.silence();
@@ -241,8 +309,9 @@ class FMProcessor extends AudioWorkletProcessor {
     };
     this.port.postMessage("ready");
   }
-  capture(block) {
-    const {taps, focusId, focusNote, focusAlgorithm} = this.engine;
+  // The master trace is the average of the two output channels.
+  capture(left, right) {
+    const {taps, focusId, focusNote, focusAlgorithm, focusTimbreShown} = this.engine;
     const frame = this.frame;
     if (this.frameId !== focusId || this.frameAlgorithm !== focusAlgorithm) {
       // Never identify samples from two different voices as one OP trace.
@@ -253,31 +322,37 @@ class FMProcessor extends AudioWorkletProcessor {
     }
     // Each sample row holds OP1–OP8 and then the master output.
     const stride = OPS + 1;
-    const count = Math.min(block.length, frame.length / stride - this.written);
+    const count = Math.min(left.length, frame.length / stride - this.written);
     for (let n = 0; n < count; n++) {
       const base = (this.written + n) * stride;
       for (let op = 0; op < OPS; op++) frame[base + op] = taps[n * OPS + op];
-      frame[base + OPS] = block[n];
+      frame[base + OPS] = (left[n] + right[n]) / 2;
     }
     this.written += count;
     if (this.written * stride === frame.length) {
-      this.port.postMessage({type:"scope", note:focusNote, algorithm:focusAlgorithm, buffer:frame.buffer}, [frame.buffer]);
+      this.port.postMessage({type:"scope", note:focusNote, algorithm:focusAlgorithm, timbre:focusTimbreShown, buffer:frame.buffer}, [frame.buffer]);
       this.frame = null;
     }
   }
   process(inputs, outputs, parameters) {
-    const out = outputs[0][0];
-    if (!out) return true;
+    const [outLeft, outRight] = outputs[0];
+    if (!outLeft) return true;
     const volume = parameters?.volume;
-    for (let offset = 0; offset < out.length; offset += 128) {
-      const block = out.length <= 128 ? out : out.subarray(offset, offset + 128);
-      this.engine.render(block, !!this.frame);
-      if (volume?.length > 1) {
-        for (let i = 0; i < block.length; i++) block[i] *= volume[offset + i];
-      } else if (volume?.length === 1 && volume[0] !== 1) {
-        for (let i = 0; i < block.length; i++) block[i] *= volume[0];
+    for (let offset = 0; offset < outLeft.length; offset += 128) {
+      const size = Math.min(128, outLeft.length - offset);
+      const left = this.left.subarray(0, size), right = this.right.subarray(0, size);
+      this.engine.render(left, right, !!this.frame);
+      for (const out of [left, right]) {
+        if (volume?.length > 1) {
+          for (let i = 0; i < size; i++) out[i] *= volume[offset + i];
+        } else if (volume?.length === 1 && volume[0] !== 1) {
+          for (let i = 0; i < size; i++) out[i] *= volume[0];
+        }
       }
-      if (this.frame) this.capture(block);
+      outLeft.set(left, offset);
+      // A mono destination receives the left channel; a centred Program sounds the same on both.
+      if (outRight) outRight.set(right, offset);
+      if (this.frame) this.capture(left, right);
     }
     return true;
   }
@@ -316,6 +391,32 @@ function upgradePatch(p) {
   const operators = Array.from({length:OPS}, () => SILENT_OPERATOR.slice());
   p.operators.forEach((op, i) => { operators[places[i]] = op; });
   return {...p, algorithm, operators};
+}
+
+// Shared by the page and the AudioWorklet, after algorithms.js.
+// A Combination holds 16 timbres. Each timbre carries a full Program (an FM–8
+// patch) and the settings below. Program mode is timbre 1 on its own.
+const TIMBRES = 16;
+const POLYPHONY = 64;
+const TIMBRE_DEFAULTS = {on:false, volume:1, pan:0, transpose:0, detune:0, keyLow:0, keyHigh:127, velocityLow:1, velocityHigh:127};
+// [minimum, maximum, whole numbers only]
+const TIMBRE_RANGES = {
+  volume:[0,1,false], pan:[-1,1,false], transpose:[-24,24,true], detune:[-100,100,false],
+  keyLow:[0,127,true], keyHigh:[0,127,true], velocityLow:[1,127,true], velocityHigh:[1,127,true]
+};
+// Velocity zones use the 1–127 MIDI scale. The engine works with 0–1.
+function velocity127(velocity) { return Math.min(127, Math.max(1, Math.round(velocity * 127))); }
+function timbreAccepts(t, key, velocity) {
+  const v = velocity127(velocity);
+  return t.on && key >= t.keyLow && key <= t.keyHigh && v >= t.velocityLow && v <= t.velocityHigh;
+}
+// Balance law: the far channel fades out while the near one stays at the timbre volume.
+function timbreGains(t) {
+  const pan = Math.min(1, Math.max(-1, t.pan)), volume = Math.min(1, Math.max(0, t.volume));
+  return [volume * Math.min(1, 1 - pan), volume * Math.min(1, 1 + pan)];
+}
+function programSetup(program) {
+  return Array.from({length:TIMBRES}, (_, i) => ({...TIMBRE_DEFAULTS, on:i === 0, program}));
 }
 
 const WASM="";
@@ -376,6 +477,157 @@ const BANK=[
   }
 ]
 ;
+const COMBIS=[
+  {
+    "name":"EP + Bell Layer",
+    "timbres":[
+      {"on":true,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Transit EP","algorithm":72,"feedback":0.08,"operators":[[1,0.93,0.005,1.55,0.27,0.43],[1,0.72,0.003,0.68,0.045,0.23],[1.002,0.48,0.007,1.35,0.18,0.47],[7,0.42,0.002,0.23,0.012,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[2,0.17,0.003,0.74,0.02,0.28],[3,0.28,0.002,0.33,0,0.17]]}},
+      {"on":true,"volume":0.5,"pan":0.2,"transpose":12,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":100,"velocityHigh":127,
+       "program":{"name":"Aurelian Bell","algorithm":72,"feedback":0.16,"operators":[[1,0.78,0.003,2.8,0,1.5],[2.71,0.6,0.002,1.3,0,0.7],[2,0.35,0.004,2.2,0,1.1],[3.51,0.45,0.002,0.78,0,0.6],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[4.01,0.18,0.004,1.1,0,0.76],[5.41,0.35,0.002,0.48,0,0.38]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}}
+    ]
+  },
+  {
+    "name":"Bass / EP Split",
+    "timbres":[
+      {"on":true,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":59,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Diesel Bass","algorithm":10,"feedback":0.21,"operators":[[0.5,0.96,0.007,0.33,0.62,0.09],[1,0.55,0.003,0.2,0.095,0.06],[1,0.42,0.004,0.25,0.2,0.085],[1,0.52,0.003,0.18,0.09,0.06],[1,0,0.006,0.3,1,0.15],[2,0.35,0.003,0.13,0.035,0.05],[1,0,0.006,0.3,1,0.15],[3,0.3,0.002,0.08,0,0.05]]}},
+      {"on":true,"volume":0.85,"pan":0,"transpose":0,"detune":0,"keyLow":60,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Transit EP","algorithm":72,"feedback":0.08,"operators":[[1,0.93,0.005,1.55,0.27,0.43],[1,0.72,0.003,0.68,0.045,0.23],[1.002,0.48,0.007,1.35,0.18,0.47],[7,0.42,0.002,0.23,0.012,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[2,0.17,0.003,0.74,0.02,0.28],[3,0.28,0.002,0.33,0,0.17]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}}
+    ]
+  },
+  {
+    "name":"Organ + Choir",
+    "timbres":[
+      {"on":true,"volume":0.8,"pan":-0.25,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Drawbar Organ","algorithm":88,"feedback":0,"operators":[[0.5,0.62,0.004,0.3,1,0.07],[1,0.7,0.004,0.3,1,0.07],[1.5,0.5,0.004,0.3,1,0.07],[2,0.46,0.004,0.3,1,0.07],[3,0.26,0.004,0.3,1,0.07],[4,0.22,0.004,0.3,1,0.07],[5,0.1,0.004,0.3,1,0.07],[6,0.14,0.002,0.09,0,0.05]]}},
+      {"on":true,"volume":0.7,"pan":0.25,"transpose":0,"detune":6,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Glass Choir","algorithm":87,"feedback":0.12,"operators":[[1,0.5,0.7,2.2,0.75,1.4],[1.004,0.42,0.75,2.4,0.7,1.5],[0.996,0.42,0.8,2.6,0.7,1.5],[2,0.24,0.9,2,0.6,1.3],[2.006,0.2,0.95,2.2,0.55,1.3],[0.5,0.34,0.6,2,0.8,1.6],[3,0.12,1.1,1.8,0.5,1.2],[1,0.3,1.2,3,0.55,1.6]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}}
+    ]
+  },
+  {
+    "name":"Wide Bell",
+    "timbres":[
+      {"on":true,"volume":1,"pan":-0.7,"transpose":0,"detune":-6,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Aurelian Bell","algorithm":72,"feedback":0.16,"operators":[[1,0.78,0.003,2.8,0,1.5],[2.71,0.6,0.002,1.3,0,0.7],[2,0.35,0.004,2.2,0,1.1],[3.51,0.45,0.002,0.78,0,0.6],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[4.01,0.18,0.004,1.1,0,0.76],[5.41,0.35,0.002,0.48,0,0.38]]}},
+      {"on":true,"volume":1,"pan":0.7,"transpose":0,"detune":6,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Aurelian Bell","algorithm":72,"feedback":0.16,"operators":[[1,0.78,0.003,2.8,0,1.5],[2.71,0.6,0.002,1.3,0,0.7],[2,0.35,0.004,2.2,0,1.1],[3.51,0.45,0.002,0.78,0,0.6],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[4.01,0.18,0.004,1.1,0,0.76],[5.41,0.35,0.002,0.48,0,0.38]]}},
+      {"on":true,"volume":0.35,"pan":0,"transpose":-12,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Glass Choir","algorithm":87,"feedback":0.12,"operators":[[1,0.5,0.7,2.2,0.75,1.4],[1.004,0.42,0.75,2.4,0.7,1.5],[0.996,0.42,0.8,2.6,0.7,1.5],[2,0.24,0.9,2,0.6,1.3],[2.006,0.2,0.95,2.2,0.55,1.3],[0.5,0.34,0.6,2,0.8,1.6],[3,0.12,1.1,1.8,0.5,1.2],[1,0.3,1.2,3,0.55,1.6]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}},
+      {"on":false,"volume":1,"pan":0,"transpose":0,"detune":0,"keyLow":0,"keyHigh":127,"velocityLow":1,"velocityHigh":127,
+       "program":{"name":"Init Sine","algorithm":72,"feedback":0,"operators":[[1,0.85,0.006,0.3,1,0.15],[2,0,0.002,0.6,0.4,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15],[1,0,0.006,0.3,1,0.15]]}}
+    ]
+  }
+]
+;
 const $=id=>document.getElementById(id);
 const clone=o=>JSON.parse(JSON.stringify(o));
 const el=(s,t)=>{const n=document.createElement(s);n.textContent=t;return n};
@@ -386,16 +638,29 @@ const controls=[
 const codes=["KeyA","KeyW","KeyS","KeyE","KeyD","KeyF","KeyT","KeyG","KeyY","KeyH","KeyU","KeyJ","KeyK"];
 const names=["C","C♯","D","D♯","E","F","F♯","G","G♯","A","A♯","B","C"];
 const blacks=new Map([[1,1],[3,2],[6,4],[8,5],[10,6]]);
-let patch=clone(BANK[0]), selected=1, bankIndex=0, modified=false, octave=4;
+// "program" plays one Program. "combination" plays the 16 timbres of combi.
+// patch is the Program the editor changes: programPatch, or the Program of the timbre being edited.
+let mode="program", programPatch=clone(BANK[0]), combi=clone(COMBIS[0]), timbreSel=0;
+let patch=programPatch, selected=1, octave=4;
+const memory={program:{index:0,modified:false,imported:null},combination:{index:0,modified:false,imported:null}};
 let ctx, node, volumeParam, startup, moduleCache, nextId=1, epoch=0;
 let demoTimers=[], demoActive=false;
 const held=new Map();
 const keyElements=[];
 const paramElements=[];
 function send(msg){if(node)node.port.postMessage(msg)}
+function currentTimbres(){return mode==="program"?programSetup(patch):combi.timbres}
+function sendSetup(){
+  send({type:"setup",timbres:currentTimbres()});
+  send({type:"focus",timbre:mode==="program"?0:timbreSel});
+}
+const pad=n=>String(n).padStart(2,"0");
+function showIndex(){
+  const m=memory[mode],list=mode==="program"?BANK:COMBIS;
+  $("patchIndex").textContent=m.modified?"EDITED":m.index===-1?"USER":(mode==="program"?"":"C")+pad(m.index+1)+" / "+pad(list.length);
+}
 function changed(){
-  modified=true; send({type:"patch",patch});
-  $("patchIndex").textContent="EDITED";
+  memory[mode].modified=true;sendSetup();showIndex();
 }
 function displayValue(j,value){
   if(j===0) return Number(value.toFixed(3))+" ×";
@@ -459,7 +724,7 @@ $("algoPrev").onclick=()=>setAlgorithm(patch.algorithm-1);
 $("algoNext").onclick=()=>setAlgorithm(patch.algorithm+1);
 function redrawEditor(){
   const r=route(patch.algorithm),isCarrier=r.carriers.includes(selected);
-  $("role").textContent="OP"+(selected+1)+" / "+(isCarrier?"キャリア":"モジュレーター");
+  $("role").textContent=(mode==="combination"?"T"+pad(timbreSel+1)+" · "+patch.name+" · ":"")+"OP"+(selected+1)+" / "+(isCarrier?"キャリア":"モジュレーター");
   $("editHint").textContent=(isCarrier?"Level で、このオペレーターの音量が変わります。":"Level で、下につながるオペレーターの倍音が変わります。")+" 編集は次の打鍵から反映されます。";
   $("carriers").textContent="OUT · "+r.carriers.map(i=>"OP"+(i+1)).join(" + ");
   $("operators").replaceChildren();
@@ -481,13 +746,105 @@ controls.forEach(([label,unit,min,max,step],j)=>{
   wrap.append(cap,out,range);$("params").append(wrap);paramElements.push({range,out});
 });
 $("feedback").oninput=e=>{patch.feedback=+e.target.value;$("fbVal").value=Math.round(patch.feedback*100)+"%";changed()};
-BANK.forEach((p,i)=>{const o=el("option",p.name);o.value=i;$("preset").append(o)});
-function loadPatch(p,i){
-  patch=clone(p);bankIndex=i;modified=false;
-  $("preset").value=String(i);$("patchIndex").textContent=i===-1?"USER":String(i+1).padStart(2,"0")+" / "+String(BANK.length).padStart(2,"0");
-  suitPhrase(patch.name);send({type:"patch",patch});redrawEditor();
+function fillPresets(){
+  const list=mode==="program"?BANK:COMBIS,m=memory[mode],select=$("preset");
+  select.replaceChildren();
+  list.forEach((p,i)=>{const o=el("option",(mode==="program"?"":"C"+pad(i+1)+" ")+p.name);o.value=i;select.append(o)});
+  if(m.imported){const o=el("option",m.imported.name);o.value=-1;select.append(o)}
+  select.setAttribute("aria-label",mode==="program"?"プリセット音色":"Combination");
+  select.value=String(m.index);
 }
-$("preset").onchange=e=>{const i=+e.target.value;loadPatch(i===-1?imported:BANK[i],i);e.target.blur()};
+function loadPatch(p,i){
+  programPatch=clone(p);patch=programPatch;memory.program.index=i;memory.program.modified=false;
+  $("preset").value=String(i);showIndex();
+  suitPhrase(patch.name);sendSetup();redrawEditor();
+}
+function loadCombi(c,i){
+  combi=clone(c);memory.combination.index=i;memory.combination.modified=false;
+  timbreSel=Math.max(0,combi.timbres.findIndex(t=>t.on));patch=combi.timbres[timbreSel].program;
+  $("preset").value=String(i);showIndex();
+  suitPhrase(combi.name);sendSetup();redrawTimbres();redrawEditor();
+}
+function setMode(next){
+  if(next===mode)return;
+  mode=next;
+  $("modeProgram").setAttribute("aria-pressed",mode==="program");$("modeCombi").setAttribute("aria-pressed",mode==="combination");
+  $("combi").hidden=mode!=="combination";
+  patch=mode==="program"?programPatch:combi.timbres[timbreSel].program;
+  fillPresets();showIndex();suitPhrase(mode==="program"?patch.name:combi.name);
+  sendSetup();if(mode==="combination")redrawTimbres();redrawEditor();
+}
+$("modeProgram").onclick=()=>setMode("program");
+$("modeCombi").onclick=()=>setMode("combination");
+$("preset").onchange=e=>{
+  const i=+e.target.value,m=memory[mode];
+  if(mode==="program")loadPatch(i===-1?m.imported:BANK[i],i);else loadCombi(i===-1?m.imported:COMBIS[i],i);
+  e.target.blur();
+};
+// ---------- Timbre table
+const noteName=n=>names[n%12]+(Math.floor(n/12)-1);
+function editTimbre(i){
+  timbreSel=i;patch=combi.timbres[i].program;
+  send({type:"focus",timbre:i});redrawTimbres();redrawEditor();
+}
+function setTimbre(i,key,value){
+  const [min,max,whole]=TIMBRE_RANGES[key];
+  if(!Number.isFinite(value))value=TIMBRE_DEFAULTS[key];
+  value=Math.min(max,Math.max(min,whole?Math.round(value):value));
+  const t=combi.timbres[i];t[key]=value;
+  // Keep each zone in order: moving one end past the other drags it along.
+  if(key==="keyLow"&&t.keyHigh<value)t.keyHigh=value;
+  if(key==="keyHigh"&&t.keyLow>value)t.keyLow=value;
+  if(key==="velocityLow"&&t.velocityHigh<value)t.velocityHigh=value;
+  if(key==="velocityHigh"&&t.velocityLow>value)t.velocityLow=value;
+  changed();
+}
+const panLabel=v=>Math.abs(v)<.005?"C":(v<0?"L":"R")+Math.round(Math.abs(v)*100);
+function redrawTimbres(){
+  const body=$("timbres");body.replaceChildren();
+  combi.timbres.forEach((t,i)=>{
+    const row=document.createElement("tr");row.classList.toggle("off",!t.on);row.classList.toggle("editing",i===timbreSel);
+    const cell=(...nodes)=>{const td=document.createElement("td");td.append(...nodes);row.append(td);return td};
+    const pick=el("button",pad(i+1));pick.classList.toggle("selected",i===timbreSel);pick.setAttribute("aria-pressed",i===timbreSel);
+    pick.setAttribute("aria-label","Timbre "+(i+1)+" の Program を編集");pick.onclick=()=>editTimbre(i);cell(pick);
+    const on=document.createElement("input");on.type="checkbox";on.checked=t.on;on.setAttribute("aria-label","Timbre "+(i+1)+" を鳴らす");
+    on.onchange=()=>{t.on=on.checked;row.classList.toggle("off",!t.on);changed()};cell(on);
+    const program=document.createElement("select");program.className="program";program.setAttribute("aria-label","Timbre "+(i+1)+" の Program");
+    const match=BANK.findIndex(p=>p.name===t.program.name);
+    if(match<0){const o=el("option",t.program.name+"（独自）");o.value=-1;program.append(o)}
+    BANK.forEach((p,k)=>{const o=el("option",pad(k+1)+" "+p.name);o.value=k;program.append(o)});
+    program.value=String(match);
+    program.onchange=()=>{t.program=clone(BANK[+program.value]);if(i===timbreSel)patch=t.program;changed();redrawTimbres();redrawEditor();program.blur()};
+    cell(program);
+    const slider=(key,min,max,label,format)=>{
+      const r=document.createElement("input");Object.assign(r,{type:"range",min,max,step:.01,value:t[key]});
+      r.setAttribute("aria-label","Timbre "+(i+1)+" の "+label);
+      const o=document.createElement("output");o.value=format(t[key]);
+      r.oninput=()=>{setTimbre(i,key,+r.value);o.value=format(t[key])};
+      cell(r,o);
+    };
+    slider("volume",0,1,"Volume",v=>Math.round(v*100));
+    slider("pan",-1,1,"Pan",panLabel);
+    const number=(key,label)=>{
+      const [min,max]=TIMBRE_RANGES[key],n=document.createElement("input");
+      Object.assign(n,{type:"number",min,max,step:1,value:t[key]});n.setAttribute("aria-label","Timbre "+(i+1)+" の "+label);
+      n.onchange=()=>{setTimbre(i,key,+n.value);redrawTimbres()};
+      return n;
+    };
+    cell(number("transpose","Transpose"));
+    cell(number("detune","Detune"));
+    const keySelect=(key,label)=>{
+      const k=document.createElement("select");k.setAttribute("aria-label","Timbre "+(i+1)+" の "+label);
+      for(let n=0;n<128;n++){const o=el("option",noteName(n));o.value=n;k.append(o)}
+      k.value=String(t[key]);k.onchange=()=>{setTimbre(i,key,+k.value);redrawTimbres()};
+      return k;
+    };
+    const dash=()=>{const d=el("span","–");d.className="dash";return d};
+    cell(keySelect("keyLow","鍵域の下限"),dash(),keySelect("keyHigh","鍵域の上限"));
+    cell(number("velocityLow","ベロシティの下限"),dash(),number("velocityHigh","ベロシティの上限"));
+    body.append(row);
+  });
+}
 $("edition").textContent=WASM?"RUST / WEBASSEMBLY":"試奏版 / JAVASCRIPT";
 function showError(e){$("error").textContent=e.message || String(e)}
 async function prepare(){
@@ -505,7 +862,7 @@ async function prepare(){
       }
       // file:// で開くとオリジンが null になり、blob:null の URL は Worklet に拒否されるため data: URL で渡す
       await ctx.audioWorklet.addModule("data:text/javascript;charset=utf-8,"+encodeURIComponent($("processor").textContent));
-      const processor=new AudioWorkletNode(ctx,"aurelian-fm8",{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[1],parameterData:{volume:+$("gain").value},processorOptions:{module:moduleCache,patch}});
+      const processor=new AudioWorkletNode(ctx,"aurelian-fm8",{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[2],parameterData:{volume:+$("gain").value},processorOptions:{module:moduleCache,timbres:currentTimbres()}});
       await new Promise((resolve,reject)=>{
         const deadline=setTimeout(()=>reject(Error("音源が応答しません。ページを開き直してお試しください。")),5000);
         processor.port.onmessage=e=>{if(e.data==="ready"){clearTimeout(deadline);resolve()}};
@@ -515,7 +872,7 @@ async function prepare(){
       processor.port.onmessage=receiveScope;
       processor.connect(ctx.destination);node=processor;
       node.onprocessorerror=()=>{showError(Error("音源が停止しました。ページを開き直してください。"));$("status").textContent="音源停止";$("dot").classList.remove("on")};
-      send({type:"patch",patch});$("dot").classList.add("on");$("status").textContent=Math.round(ctx.sampleRate/100)/10+" kHz · 演奏中";
+      sendSetup();$("dot").classList.add("on");$("status").textContent=Math.round(ctx.sampleRate/100)/10+" kHz · 演奏中";
       $("error").textContent="";
     } catch(e) {node=null;if(ctx && ctx.state!=="closed")await ctx.close();ctx=null;throw e}
   })();
@@ -553,7 +910,7 @@ function setOct(n){octave=Math.min(7,Math.max(1,n));$("octave").value="C"+octave
 $("octDown").onclick=()=>setOct(octave-1);$("octUp").onclick=()=>setOct(octave+1);
 window.addEventListener("keydown",e=>{
   if(e.code==="Escape"){panic();return}
-  if(e.ctrlKey||e.metaKey||e.altKey||e.isComposing||e.target.tagName==="SELECT")return;
+  if(e.ctrlKey||e.metaKey||e.altKey||e.isComposing||e.target.tagName==="SELECT"||e.target.type==="number")return;
   const i=codes.indexOf(e.code);if(i<0)return;e.preventDefault();
   if(!e.repeat)strike(e.code,(octave+1)*12+i,e.shiftKey ? .98 : .72);
 });
@@ -563,38 +920,37 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden)panic()});
 // Short original phrases in web/phrases.json. Each entry is [start beat, MIDI note, length in beats, velocity].
 const PHRASES=[
   {
-    "name":"コードとメロディー","suits":["Transit EP"],"beat":455,
+    "name":"コードとメロディー","suits":["Transit EP","EP + Bell Layer"],"beat":455,
     "notes":[
-      [0,60,0.82,0.72],[0,64,0.82,0.65],[0,67,0.82,0.65],[0,71,0.82,0.59],
-      [1,74,0.39,0.83],[1.5,71,0.38,0.68],[2,67,0.83,0.73],
-      [3,57,0.86,0.78],[3,60,0.86,0.65],[3,64,0.86,0.65],[3,67,0.86,0.59],
-      [4,71,0.4,0.85],[4.5,69,0.4,0.67],[5,64,1.28,0.76]
+      [0,60,0.82,0.72],[0,64,0.82,0.65],[0,67,0.82,0.65],[0,71,0.82,0.59],[1,74,0.39,0.83],
+      [1.5,71,0.38,0.68],[2,67,0.83,0.73],[3,57,0.86,0.78],[3,60,0.86,0.65],[3,64,0.86,0.65],
+      [3,67,0.86,0.59],[4,71,0.4,0.85],[4.5,69,0.4,0.67],[5,64,1.28,0.76]
     ]
   },
   {
-    "name":"ベルのアルペジオ","suits":["Aurelian Bell"],"beat":400,
+    "name":"ベルのアルペジオ","suits":["Aurelian Bell","Wide Bell"],"beat":400,
     "notes":[
-      [0,76,1.6,0.8],[0.5,79,1.4,0.7],[1,84,1.4,0.75],[1.5,83,1,0.65],
-      [2,79,1.8,0.72],[3,74,1,0.6],[3.5,76,2.5,0.75],
-      [4,64,3,0.55],[4,69,3,0.6],[5,72,0.9,0.62],[5.5,71,0.9,0.58],[6,69,2,0.7]
+      [0,76,1.6,0.8],[0.5,79,1.4,0.7],[1,84,1.4,0.75],[1.5,83,1,0.65],[2,79,1.8,0.72],
+      [3,74,1,0.6],[3.5,76,2.5,0.75],[4,64,3,0.55],[4,69,3,0.6],[5,72,0.9,0.62],
+      [5.5,71,0.9,0.58],[6,69,2,0.7]
     ]
   },
   {
     "name":"ベースリフ","suits":["Diesel Bass"],"beat":260,
     "notes":[
       [0,40,0.45,0.9],[0.5,40,0.2,0.55],[0.75,40,0.2,0.6],[1,43,0.45,0.8],[1.5,45,0.45,0.75],
-      [2,47,0.2,0.7],[2.5,45,0.2,0.65],[3,43,0.45,0.8],[3.5,38,0.45,0.85],
-      [4,40,0.45,0.9],[4.5,40,0.2,0.55],[4.75,52,0.2,0.7],[5,50,0.45,0.8],[5.5,47,0.45,0.75],
-      [6,45,0.45,0.75],[6.5,43,0.45,0.7],[7,40,1.2,0.9]
+      [2,47,0.2,0.7],[2.5,45,0.2,0.65],[3,43,0.45,0.8],[3.5,38,0.45,0.85],[4,40,0.45,0.9],
+      [4.5,40,0.2,0.55],[4.75,52,0.2,0.7],[5,50,0.45,0.8],[5.5,47,0.45,0.75],[6,45,0.45,0.75],
+      [6.5,43,0.45,0.7],[7,40,1.2,0.9]
     ]
   },
   {
-    "name":"オルガンのコード進行","suits":["Drawbar Organ"],"beat":500,
+    "name":"オルガンのコード進行","suits":["Drawbar Organ","Organ + Choir"],"beat":500,
     "notes":[
       [0,53,1.9,0.7],[0,57,1.9,0.65],[0,60,1.9,0.65],[0,69,0.9,0.75],[1,72,0.9,0.7],
       [2,53,1.9,0.7],[2,58,1.9,0.65],[2,62,1.9,0.65],[2,70,0.9,0.75],[3,74,0.9,0.72],
-      [4,48,1.9,0.7],[4,58,1.9,0.65],[4,64,1.9,0.65],[4,72,0.45,0.75],[4.5,70,0.45,0.7],[5,67,0.9,0.7],
-      [6,53,2.4,0.7],[6,57,2.4,0.65],[6,60,2.4,0.65],[6,65,2.4,0.75]
+      [4,48,1.9,0.7],[4,58,1.9,0.65],[4,64,1.9,0.65],[4,72,0.45,0.75],[4.5,70,0.45,0.7],
+      [5,67,0.9,0.7],[6,53,2.4,0.7],[6,57,2.4,0.65],[6,60,2.4,0.65],[6,65,2.4,0.75]
     ]
   },
   {
@@ -610,6 +966,16 @@ const PHRASES=[
     "notes":[
       [0,60,0.6,0.8],[0.66,63,0.3,0.65],[1,65,0.6,0.75],[1.66,66,0.3,0.6],[2,67,0.9,0.8],
       [3,70,0.6,0.7],[3.66,67,0.3,0.6],[4,65,0.6,0.7],[4.66,63,0.3,0.6],[5,60,1.8,0.8]
+    ]
+  },
+  {
+    "name":"ベースとエレピのスプリット","suits":["Bass / EP Split"],"beat":420,
+    "notes":[
+      [0,36,0.9,0.85],[0,64,0.9,0.65],[0,67,0.9,0.6],[0,71,0.9,0.6],[1,43,0.45,0.7],
+      [1.5,48,0.45,0.75],[2,41,0.9,0.85],[2,65,0.9,0.65],[2,69,0.9,0.6],[2,72,0.9,0.6],
+      [3,48,0.45,0.7],[3.5,45,0.45,0.75],[4,43,0.9,0.85],[4,62,0.9,0.65],[4,67,0.9,0.6],
+      [4,71,0.9,0.6],[5,50,0.45,0.7],[5.5,47,0.45,0.7],[6,36,1.5,0.85],[6,64,1.5,0.65],
+      [6,67,1.5,0.6],[6,72,1.5,0.6]
     ]
   }
 ]
@@ -631,7 +997,6 @@ $("demo").onclick=async()=>{
     demoTimers.push(setTimeout(finishDemo,(end+.35)*beat));
   }catch(e){finishDemo();showError(e)}
 };
-let imported;
 function validate(p){
   if(!p || typeof p.name!=="string" || !p.name.trim() || p.name.length>64 ||
     !Number.isInteger(p.algorithm) || p.algorithm<1 || p.algorithm>ALGORITHMS.length ||
@@ -640,18 +1005,41 @@ function validate(p){
     !p.operators.every(op=>Array.isArray(op)&&op.length===6&&op.every((v,j)=>Number.isFinite(v)&&v>=controls[j][2]&&v<=controls[j][3])))
     throw Error("FM–8 または FM–6 の音色ファイルを選んでください。");
 }
+function validateCombi(c){
+  const fail=()=>{throw Error("FM–8 の Combination ファイルとして読めません。")};
+  if(!c || typeof c.name!=="string" || !c.name.trim() || c.name.length>64 || !Array.isArray(c.timbres) || c.timbres.length!==TIMBRES)fail();
+  for(const t of c.timbres){
+    if(!t || typeof t.on!=="boolean")fail();
+    for(const [key,[min,max,whole]] of Object.entries(TIMBRE_RANGES)){
+      const v=t[key];
+      if(!Number.isFinite(v) || v<min || v>max || (whole && !Number.isInteger(v)))fail();
+    }
+    validate(t.program);
+  }
+}
+// Programs save as .fm8.json. A Combination saves its 16 timbres, each with its own Program, as .fm8combi.json.
 $("store").onclick=()=>{
-  const data=clone(patch);
-  if(modified && !data.name.endsWith(" Edit"))data.name=data.name.slice(0,59)+" Edit";
+  const data=mode==="program"?clone(patch):{name:combi.name,timbres:clone(combi.timbres)};
+  if(memory[mode].modified && !data.name.endsWith(" Edit"))data.name=data.name.slice(0,59)+" Edit";
   const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:"application/json"}));
-  const a=el("a","");a.href=url;a.download=data.name.replace(/[^\p{L}\p{N}_-]+/gu,"-")+".fm8.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  const ext=mode==="program"?".fm8.json":".fm8combi.json";
+  const a=el("a","");a.href=url;a.download=data.name.replace(/[^\p{L}\p{N}_-]+/gu,"-")+ext;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
 $("recall").onclick=()=>$("file").click();
 $("file").onchange=async e=>{
-  try{const f=e.target.files[0];if(!f)return;if(f.size>32768)throw Error("音色ファイルが大きすぎます。");
-    const p=upgradePatch(JSON.parse(await f.text()));validate(p);imported=p;
-    let opt=$("preset").querySelector('option[value="-1"]');if(!opt){opt=el("option","");opt.value=-1;$("preset").append(opt)}opt.textContent=p.name;
-    loadPatch(p,-1);$("error").textContent="";
+  try{const f=e.target.files[0];if(!f)return;if(f.size>262144)throw Error("音色ファイルが大きすぎます。");
+    const raw=JSON.parse(await f.text());
+    // A file with timbres is a Combination. Anything else is a Program, FM–6 files included.
+    if(raw && Array.isArray(raw.timbres)){
+      validateCombi(raw);memory.combination.imported=raw;memory.combination.index=-1;
+      if(mode==="combination")fillPresets();else setMode("combination");
+      loadCombi(raw,-1);
+    } else {
+      const p=upgradePatch(raw);validate(p);memory.program.imported=p;memory.program.index=-1;
+      if(mode==="program")fillPresets();else setMode("program");
+      loadPatch(p,-1);
+    }
+    $("error").textContent="";
   }catch(e){showError(e)}finally{$("file").value=""}
 };
 const traces=[];
@@ -673,12 +1061,13 @@ function receiveScope(event) {
   if(m.type!=="scope")return;
   // The previous frame stays readable while the next buffer is on the audio thread.
   if(displayFrame)spareBuffer=displayFrame.data.buffer;
-  displayFrame={data:new Float32Array(m.buffer),note:m.note,algorithm:m.algorithm};
+  displayFrame={data:new Float32Array(m.buffer),note:m.note,algorithm:m.algorithm,timbre:m.timbre};
   scopePending=false;scopeDirty=true;
 }
 function updateScopeLabels(algorithm,note) {
   const sounding=algorithm!==0;
-  const label=sounding?"表示音 "+names[note%12]+(Math.floor(note/12)-1):"表示音 —";
+  const timbre=mode==="combination"&&sounding?" · T"+pad((displayFrame?.timbre??0)+1):"";
+  const label=sounding?"表示音 "+names[note%12]+(Math.floor(note/12)-1)+timbre:"表示音 —";
   if(label!==lastNoteLabel){$("scope-note").textContent=label;lastNoteLabel=label}
   const shown=sounding?algorithm:patch.algorithm;
   if(labelAlgorithm===shown)return;
@@ -749,5 +1138,5 @@ function draw(now=0) {
 }
 $("scope-zoom").onchange=e=>{scopeDirty=true;e.target.blur()};
 window.addEventListener("resize",()=>{scopeDirty=true;drawRouting(route(patch.algorithm))});
-setOct(4);loadPatch(BANK[0],0);draw();
+setOct(4);fillPresets();loadPatch(BANK[0],0);draw();
 </script></body></html>
