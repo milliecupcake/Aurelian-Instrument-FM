@@ -249,4 +249,29 @@ function voices(proc) { return Array.from(proc.engine.slots).filter(Boolean).map
   assert.equal(frame.timbre, 1);
   assert.equal(frame.algorithm, bank[4].algorithm);
 }
+// Every Program, including those inside Combinations, stays within the editor's ranges:
+// ratio, level, attack, decay, sustain, release.
+const limits = [[0.25,16],[0,1],[0.002,4],[0.01,5],[0,1],[0.01,4]];
+for (const p of [...bank, ...combis.flatMap(c => c.timbres.map(t => t.program))]) {
+  assert(p.feedback >= 0 && p.feedback <= 1, p.name);
+  p.operators.forEach(op => op.forEach((v, j) => assert(v >= limits[j][0] && v <= limits[j][1], p.name + " " + v)));
+}
+
+// Drum Kit: each key plays exactly one drum, at that drum's own pitch.
+{
+  const kit = combis.find(c => c.name === "Drum Kit");
+  const synth = combination(kit.timbres);
+  const expected = {60:["Kick",36], 61:["Rim",72], 62:["Snare",54], 63:["Clap",60], 65:["Tom",45],
+                    66:["Closed Hat",84], 67:["Tom",50], 69:["Tom",55], 70:["Open Hat",84], 72:["Crash",79]};
+  for (const [key, [name, note]] of Object.entries(expected)) {
+    send(synth, {type:"silence"});
+    start(synth, 1, Number(key));
+    const [v, ...rest] = voices(synth);
+    assert.equal(rest.length, 0, "key " + key);
+    assert.deepEqual([kit.timbres[v.timbre].program.name, v.note], [name, note]);
+  }
+  send(synth, {type:"silence"});
+  start(synth, 1, 64);
+  assert.equal(voices(synth).length, 0, "E4 has no drum");
+}
 console.log("Nine-channel scope, algorithm, phrase and combination checks passed.");
