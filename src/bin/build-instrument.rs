@@ -23,13 +23,19 @@ fn build() -> io::Result<()> {
     if !status.success() {
         return Err(io::Error::other("Install the target with: rustup target add wasm32-unknown-unknown"));
     }
-    let wasm = fs::read(out.join("wasm32-unknown-unknown/release/aurelian_fm6.wasm"))?;
-    let html = include_str!("../../web/instrument.html")
+    let wasm = fs::read(out.join("wasm32-unknown-unknown/release/aurelian_fm8.wasm"))?;
+    // The page and the worklet read the same routing table as src/algorithms.rs.
+    let table: Vec<String> = include_str!("../../web/algorithms.txt").lines()
+        .map(|line| format!("\"{line}\"")).collect();
+    let page = include_str!("../../web/instrument.html")
         .replace("__WORKLET__", include_str!("../../web/processor.js"))
-        .replace("__PATCHES__", include_str!("../../web/presets.json"))
-        .replace("__WASM_BASE64__", &base64(&wasm));
-    let dest = root.join("Aurelian-FM6.html");
-    fs::write(&dest, html)?;
+        .replace("__ALGORITHM_LIB__", include_str!("../../web/algorithms.js"))
+        .replace("__ALGORITHMS__", &format!("[{}]", table.join(",")))
+        .replace("__PATCHES__", include_str!("../../web/presets.json"));
+    // Play-FM8.html runs the JavaScript reference engine and needs no build tools to open.
+    fs::write(root.join("Play-FM8.html"), page.replace("__WASM_BASE64__", ""))?;
+    let dest = root.join("Aurelian-FM8.html");
+    fs::write(&dest, page.replace("__WASM_BASE64__", &base64(&wasm)))?;
     println!("Open {} in a desktop browser.", dest.display());
     Ok(())
 }

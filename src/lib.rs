@@ -1,15 +1,16 @@
+pub mod algorithms;
 pub mod engine;
 
 #[cfg(target_arch = "wasm32")]
 mod audio {
-    use super::engine::{Engine, Operator};
+    use super::engine::{Engine, Operator, OPS};
     use std::cell::RefCell;
 
-    // JS reads three u32 words followed by 128 interleaved rows of six f32s.
+    // JS reads three u32 words followed by 128 interleaved rows of eight f32s.
     #[repr(C)]
     struct ScopeBlock {
         id: u32, note: u32, algorithm: u32,
-        taps: [[f32; 6]; 128],
+        taps: [[f32; OPS]; 128],
     }
     struct Audio { engine: Engine, block: [f32; 128], scope: ScopeBlock }
     thread_local! { static AUDIO: RefCell<Option<Audio>> = const { RefCell::new(None) }; }
@@ -20,7 +21,7 @@ mod audio {
 
     #[no_mangle]
     pub extern "C" fn init(rate: f32) {
-        let scope = ScopeBlock { id: 0, note: 0, algorithm: 0, taps: [[0.0; 6]; 128] };
+        let scope = ScopeBlock { id: 0, note: 0, algorithm: 0, taps: [[0.0; OPS]; 128] };
         AUDIO.with(|cell| *cell.borrow_mut() = Some(Audio { engine: Engine::new(rate), block: [0.0; 128], scope }));
     }
     #[no_mangle]

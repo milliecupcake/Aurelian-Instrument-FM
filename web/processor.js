@@ -1,10 +1,6 @@
 // Reference engine used by the ready-to-play edition. The Rust edition routes
 // the same messages into Wasm and does its entire sample loop in src/engine.rs.
-const tables = {
-  1:  { source: [1,-1,3,4,5,-1], carriers: [0,2] },
-  5:  { source: [1,-1,3,-1,5,-1], carriers: [0,2,4] },
-  32: { source: [-1,-1,-1,-1,-1,-1], carriers: [0,1,2,3,4,5] }
-};
+__ALGORITHM_LIB__
 const tau = 2 * Math.PI;
 const sine = Float32Array.from({length:2049}, (_, i) => Math.sin(tau * i / 2048));
 
@@ -13,7 +9,7 @@ class PreviewEngine {
     this.rate = rate;
     this.slots = Array(16).fill(null);
     this.serial = 0;
-    this.taps = new Float32Array(128 * 6);
+    this.taps = new Float32Array(128 * OPS);
   }
   setPatch(patch) { this.patch = patch; }
   on(id, note, velocity) {
@@ -28,10 +24,11 @@ class PreviewEngine {
       }
     }
     const hz = 440 * 2 ** ((note - 69) / 12);
-    const {feedback, operators, algorithm} = this.patch;
+    const {feedback, operators} = this.patch;
+    const algorithm = Math.min(ALGORITHMS.length, Math.max(1, this.patch.algorithm));
     this.slots[i] = {
-      id, note, algorithm, serial: ++this.serial, released:false, velocity, feedback, route:tables[algorithm],
-      recent:0, older:0, values:new Float64Array(6),
+      id, note, algorithm, serial: ++this.serial, released:false, velocity, feedback, route:route(algorithm),
+      recent:0, older:0, values:new Float64Array(OPS),
       ops:operators.map(([ratio, level, a, d, s, r]) => ({
         p:0, step:(hz * ratio / this.rate) % 1, level, env:0, stage:0,
         attack:1 / Math.max(1, a * this.rate), decay:(1-s) / Math.max(1, d * this.rate),
@@ -65,7 +62,7 @@ class PreviewEngine {
       if (!v) continue;
       const {ops,values,route}=v;
       for(let n=0;n<out.length;n++) {
-        for(let i=5;i>=0;i--) {
+        for(let i=OPS-1;i>=0;i--) {
           const o=ops[i];
           if(o.stage===0) {
             o.env+=o.attack;
@@ -77,16 +74,19 @@ class PreviewEngine {
             o.env-=o.release;
             if(o.env<=0.000001){o.env=0; o.stage=4;}
           }
-          const src=route.source[i];
-          let turns=o.p + (src===-1 ? 0 : values[src] * 6/tau);
-          if(i===5) turns+=(v.recent+v.older)*v.feedback*2/tau;
+          // Several modulators add up. One full-scale modulator shifts the phase by up to 6 radians.
+          const sources=route.modulators[i];
+          let input=0;
+          for(let k=0;k<sources.length;k++) input+=values[sources[k]];
+          let turns=o.p + input * 6/tau;
+          if(i===OPS-1) turns+=(v.recent+v.older)*v.feedback*2/tau;
           const position=(turns-Math.floor(turns))*2048, k=Math.floor(position);
           values[i]=(sine[k]+(sine[k+1]-sine[k])*(position-k))*o.env*o.level*v.velocity;
           o.p+=o.step;
           if(o.p>=1) o.p-=1;
         }
-        v.older=v.recent; v.recent=values[5];
-        if (v === focus) this.taps.set(values, n * 6);
+        v.older=v.recent; v.recent=values[OPS-1];
+        if (v === focus) this.taps.set(values, n * OPS);
         for(let k=0;k<route.carriers.length;k++) out[n]+=values[route.carriers[k]];
       }
       if(v.released && route.carriers.every(i=>ops[i].stage===4)) this.slots[slot]=null;
@@ -117,7 +117,7 @@ class RustEngine {
     if (!this.view || this.view.buffer !== memory || this.view.byteOffset !== ptr) {
       this.view = new Float32Array(memory, ptr, 128);
       this.meta = new Uint32Array(memory, this.scopePtr, 3);
-      this.taps = new Float32Array(memory, this.scopePtr + 12, 128 * 6);
+      this.taps = new Float32Array(memory, this.scopePtr + 12, 128 * OPS);
     }
     if (out.length === 128) out.set(this.view);
     else for (let i = 0; i < out.length; i++) out[i] = this.view[i];
@@ -158,18 +158,20 @@ class FMProcessor extends AudioWorkletProcessor {
     if (this.frameId !== focusId || this.frameAlgorithm !== focusAlgorithm) {
       // Never identify samples from two different voices as one OP trace.
       // Keep the master history continuous through note changes.
-      for (let n = 0; n < this.written; n++) frame.fill(0, n * 7, n * 7 + 6);
+      for (let n = 0; n < this.written; n++) frame.fill(0, n * (OPS + 1), n * (OPS + 1) + OPS);
       this.frameId = focusId;
       this.frameAlgorithm = focusAlgorithm;
     }
-    const count = Math.min(block.length, frame.length / 7 - this.written);
+    // Each sample row holds OP1–OP8 and then the master output.
+    const stride = OPS + 1;
+    const count = Math.min(block.length, frame.length / stride - this.written);
     for (let n = 0; n < count; n++) {
-      const base = (this.written + n) * 7;
-      for (let op = 0; op < 6; op++) frame[base + op] = taps[n * 6 + op];
-      frame[base + 6] = block[n];
+      const base = (this.written + n) * stride;
+      for (let op = 0; op < OPS; op++) frame[base + op] = taps[n * OPS + op];
+      frame[base + OPS] = block[n];
     }
     this.written += count;
-    if (this.written * 7 === frame.length) {
+    if (this.written * stride === frame.length) {
       this.port.postMessage({type:"scope", note:focusNote, algorithm:focusAlgorithm, buffer:frame.buffer}, [frame.buffer]);
       this.frame = null;
     }
@@ -191,4 +193,4 @@ class FMProcessor extends AudioWorkletProcessor {
     return true;
   }
 }
-registerProcessor("aurelian-fm6",FMProcessor);
+registerProcessor("aurelian-fm8",FMProcessor);

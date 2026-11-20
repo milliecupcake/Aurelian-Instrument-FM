@@ -1,11 +1,11 @@
 [package]
-name = "aurelian-fm6"
+name = "aurelian-fm8"
 version = "0.1.0"
 edition = "2021"
 default-run = "build-instrument"
 
 [lib]
-name = "aurelian_fm6"
+name = "aurelian_fm8"
 crate-type = ["cdylib", "rlib"]
 
 [profile.release]

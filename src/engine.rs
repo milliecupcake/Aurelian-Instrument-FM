@@ -1,7 +1,8 @@
-//! Six-operator phase modulation. Operators are numbered from the output upwards.
+//! Eight-operator phase modulation. Operators are numbered from the output upwards.
+use crate::algorithms::{route, Route};
 use std::f32::consts::TAU;
 
-const OPS: usize = 6;
+pub const OPS: usize = 8;
 const POLYPHONY: usize = 16;
 const TABLE: usize = 2048;
 
@@ -30,19 +31,8 @@ pub struct Patch {
 
 impl Default for Patch {
     fn default() -> Self {
-        Self { algorithm: 5, feedback: 0.0, operators: [Operator::default(); OPS] }
-    }
-}
-
-// Each entry gives the single upstream operator, in zero-based numbering.
-// A carrier feeds the final mix. All three chosen DX topologies feed OP6 back into itself.
-fn routing(algorithm: u32) -> ([Option<usize>; OPS], [bool; OPS]) {
-    match algorithm {
-        1 => ([Some(1), None, Some(3), Some(4), Some(5), None],
-              [true, false, true, false, false, false]),
-        32 => ([None; OPS], [true; OPS]),
-        _ => ([Some(1), None, Some(3), None, Some(5), None],
-              [true, false, true, false, true, false]),
+        // Algorithm 72 pairs the operators: 2→1, 4→3, 6→5 and 8→7.
+        Self { algorithm: 72, feedback: 0.0, operators: [Operator::default(); OPS] }
     }
 }
 
@@ -94,16 +84,16 @@ impl Oscillator {
 
 struct Voice {
     id: u32, note: u32, algorithm: u32, velocity: f32, released: bool, serial: u64,
-    ops: [Oscillator; OPS], source: [Option<usize>; OPS], carrier: [bool; OPS],
+    ops: [Oscillator; OPS], route: Route,
     feedback: f32, history: [f32; 2],
 }
 
 impl Voice {
     fn new(patch: Patch, rate: f32, id: u32, note: u32, velocity: f32, serial: u64) -> Self {
         let hz = 440.0 * 2.0_f32.powf((note as f32 - 69.0) / 12.0);
-        let (source, carrier) = routing(patch.algorithm);
+        let algorithm = patch.algorithm.clamp(1, crate::algorithms::COUNT);
         Self {
-            id, note, algorithm: patch.algorithm, velocity, released: false, serial, source, carrier,
+            id, note, algorithm, velocity, released: false, serial, route: route(algorithm),
             ops: patch.operators.map(|op| Oscillator::new(op, hz, rate)),
             feedback: patch.feedback, history: [0.0; 2],
         }
@@ -115,9 +105,16 @@ impl Voice {
         for i in (0..OPS).rev() {
             let op = &mut self.ops[i];
             op.advance_envelope();
-            // One full-scale modulator shifts the phase by up to 6 radians.
-            let mut offset = self.source[i].map_or(0.0, |s| values[s]) * (6.0 / TAU);
-            if i == 5 { offset += (self.history[0] + self.history[1]) * self.feedback * (2.0 / TAU); }
+            // One full-scale modulator shifts the phase by up to 6 radians. Several modulators add up.
+            let mut input = 0.0;
+            let mut sources = self.route.modulators[i];
+            while sources != 0 {
+                let j = sources.trailing_zeros() as usize;
+                input += values[j];
+                sources &= sources - 1;
+            }
+            let mut offset = input * (6.0 / TAU);
+            if i == OPS - 1 { offset += (self.history[0] + self.history[1]) * self.feedback * (2.0 / TAU); }
             let turns = op.phase + offset;
             let position = (turns - turns.floor()) * TABLE as f32;
             let whole = position as usize;
@@ -126,14 +123,15 @@ impl Voice {
             values[i] = sample * op.envelope * op.level * self.velocity;
             op.phase += op.step;
             if op.phase >= 1.0 { op.phase -= 1.0; }
-            if self.carrier[i] { mixed += values[i]; }
+            if self.route.carriers >> i & 1 == 1 { mixed += values[i]; }
         }
-        self.history = [values[5], self.history[0]];
+        self.history = [values[OPS - 1], self.history[0]];
         (mixed, values)
     }
 
     fn ended(&self) -> bool {
-        self.released && self.ops.iter().zip(self.carrier).all(|(op, carrier)| !carrier || op.stage == Stage::End)
+        self.released && self.ops.iter().enumerate()
+            .all(|(i, op)| self.route.carriers >> i & 1 == 0 || op.stage == Stage::End)
     }
 }
 
@@ -183,7 +181,7 @@ impl Engine {
         self.render_block(output, None);
     }
 
-    /// Six post-envelope operator outputs per sample for one voice.
+    /// Eight post-envelope operator outputs per sample for one voice.
     /// The audio output always contains the full polyphonic mix.
     pub fn render_with_scope(&mut self, output: &mut [f32], taps: &mut [[f32; OPS]]) -> Option<ScopeVoice> {
         assert_eq!(output.len(), taps.len());
@@ -226,9 +224,6 @@ mod tests {
     use super::*;
     #[test]
     fn mappings_and_polyphony() {
-        assert_eq!(routing(1).1.iter().filter(|&&x| x).count(), 2);
-        assert_eq!(routing(5).1.iter().filter(|&&x| x).count(), 3);
-        assert_eq!(routing(32).1.iter().filter(|&&x| x).count(), 6);
         let mut e = Engine::new(48000.0);
         for i in 0..17 { e.on(i, 60 + i, 0.8); }
         assert_eq!(e.voices.iter().flatten().count(), 16);
@@ -241,7 +236,7 @@ mod tests {
     #[test]
     fn pure_a4_and_release() {
         let mut e = Engine::new(48000.0);
-        e.patch.algorithm = 32;
+        e.patch.algorithm = 88;
         for (i, p) in e.patch.operators.iter_mut().enumerate() {
             p.level = if i == 0 { 1.0 } else { 0.0 };
             p.sustain = 1.0;
@@ -264,7 +259,7 @@ mod tests {
         let mut scoped = Engine::new(48000.0);
         for engine in [&mut plain, &mut scoped] {
             engine.on(1, 60, 0.8);
-            engine.patch.algorithm = 32;
+            engine.patch.algorithm = 88;
             engine.on(2, 67, 0.7);
             engine.patch.algorithm = 1;
         }
@@ -272,21 +267,52 @@ mod tests {
         let mut b = [0.0; 128];
         let mut taps = [[0.0; OPS]; 128];
         let mut solo = Engine::new(48000.0);
-        solo.patch.algorithm = 32;
+        solo.patch.algorithm = 88;
         solo.on(2, 67, 0.7);
         let mut solo_out = [0.0; 128];
         let mut solo_taps = taps;
         solo.render_with_scope(&mut solo_out, &mut solo_taps);
         plain.render(&mut a);
         let focus = scoped.render_with_scope(&mut b, &mut taps).unwrap();
-        assert_eq!((focus.note, focus.algorithm), (67, 32));
+        assert_eq!((focus.note, focus.algorithm), (67, 88));
         assert_eq!(a, b);
         assert_eq!(taps, solo_taps);
-        assert!(taps.iter().any(|row| row[5].abs() > 0.01));
+        assert!(taps.iter().any(|row| row[OPS - 1].abs() > 0.01));
         scoped.off(2);
         assert_eq!(scoped.render_with_scope(&mut b, &mut taps).unwrap().id, 1);
         scoped.silence();
         assert!(scoped.render_with_scope(&mut b, &mut taps).is_none());
         assert_eq!(taps, [[0.0; OPS]; 128]);
+    }
+
+    #[test]
+    fn shared_and_merged_modulators() {
+        // Algorithm 87: OP8 modulates OP1–OP7. Algorithm 1: OP5 and OP1 each receive two modulators.
+        let shared = route(87);
+        assert_eq!(shared.carriers, 0b0111_1111);
+        assert!(shared.modulators[..7].iter().all(|&m| m == 0b1000_0000));
+        let merged = route(1);
+        assert_eq!(merged.modulators[4], 0b1100_0000);
+        assert_eq!(merged.modulators[0], 0b0000_0110);
+
+        // With OP8 silent, algorithm 87 is an unmodulated sine on OP1. Raising OP8 changes it.
+        let render = |depth: f32| {
+            let mut e = Engine::new(48000.0);
+            e.patch.algorithm = 87;
+            for (i, op) in e.patch.operators.iter_mut().enumerate() {
+                op.level = if i == 7 { depth } else if i == 0 { 1.0 } else { 0.0 };
+                op.sustain = 1.0;
+            }
+            e.on(1, 69, 1.0);
+            let mut taps = [[0.0; OPS]; 512];
+            let mut out = [0.0; 512];
+            e.render_with_scope(&mut out, &mut taps);
+            (out, taps)
+        };
+        let (plain, _) = render(0.0);
+        let (modulated, taps) = render(0.9);
+        assert_ne!(plain, modulated);
+        assert!(taps.iter().any(|row| row[7].abs() > 0.1));
+        assert!(taps.iter().all(|row| row[1..7].iter().all(|&s| s == 0.0)), "silent carriers stay silent");
     }
 }

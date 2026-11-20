@@ -1,5 +1,5 @@
 //! A native Rust listening exercise. Compare a sine wave with one modulated by OP2.
-use aurelian_fm6::engine::Engine;
+use aurelian_fm8::engine::Engine;
 use std::{fs::File, io::{self, BufWriter, Write}};
 
 fn write_wave(path: &str, samples: &[f32], rate: u32) -> io::Result<()> {
@@ -28,7 +28,7 @@ fn main() -> io::Result<()> {
     let mut engine = Engine::new(rate as f32);
     for op in &mut engine.patch.operators { op.level = 0.0; }
 
-    // Algorithm 5 routes OP2 into OP1. OP1 is the only audible carrier here.
+    // The default algorithm 72 routes OP2 into OP1. OP1 is the only audible carrier here.
     engine.patch.operators[0].level = 0.9;
     engine.patch.operators[0].sustain = 0.65;
     engine.patch.operators[1].ratio = 2.0;
