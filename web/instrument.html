@@ -146,8 +146,8 @@ async function prepare(){
         const bytes=Uint8Array.from(atob(WASM),c=>c.charCodeAt(0));
         moduleCache=await WebAssembly.compile(bytes);
       }
-      const blob=new Blob([$("processor").textContent],{type:"text/javascript"}),url=URL.createObjectURL(blob);
-      try {await ctx.audioWorklet.addModule(url)} finally {URL.revokeObjectURL(url)}
+      // file:// で開くとオリジンが null になり、blob:null の URL は Worklet に拒否されるため data: URL で渡す
+      await ctx.audioWorklet.addModule("data:text/javascript;charset=utf-8,"+encodeURIComponent($("processor").textContent));
       const processor=new AudioWorkletNode(ctx,"aurelian-fm6",{numberOfInputs:0,numberOfOutputs:1,outputChannelCount:[1],parameterData:{volume:+$("gain").value},processorOptions:{module:moduleCache,patch}});
       await new Promise((resolve,reject)=>{
         const deadline=setTimeout(()=>reject(Error("音源が応答しません。ページを開き直してお試しください。")),5000);
