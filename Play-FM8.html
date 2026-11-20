@@ -11,7 +11,7 @@ main{max-width:1140px;margin:0 auto;padding:22px 32px 24px}
 .screen{background:var(--dark);color:#e6edc9;border:1px solid #112921;border-radius:6px;padding:18px 20px 15px;position:relative;overflow:hidden}.small{font:600 10px/1.25 var(--mono);letter-spacing:.13em;text-transform:uppercase}.screen .small{color:#adc4ad}.screen-top,.screen-foot{display:flex;align-items:center;justify-content:space-between;gap:10px}.screen-top .patch-index{color:#bdcdb4;font:11px var(--mono)}.preset-select{position:relative;margin:9px 0 5px}.preset-select:after{content:"⌄";position:absolute;right:3px;top:20%;pointer-events:none;font:24px var(--mono);color:#aec2a7}select#preset{width:100%;height:51px;text-overflow:ellipsis;appearance:none;background:none;border:0;border-bottom:1px solid #6c8271;color:#f5f2d8;font:bold clamp(24px,3vw,40px)/1.05 var(--sans);letter-spacing:-.045em;padding:0 28px 4px 0}select option{color:#1d322e;background:#f1eee4;font-size:16px}canvas{display:block;width:100%;height:43px;margin:9px 0 11px}.screen-foot{justify-content:flex-start;gap:7px}.screen-foot button{height:34px;padding:0 13px;border-color:#79907c;background:transparent;color:#e0e8d3;font-size:12px}.screen-foot .play{background:#e1e9ca;border-color:#e1e9ca;color:var(--ink)}.screen-foot .play[aria-pressed=true]{background:var(--orange);border-color:var(--orange)}
 .module{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:15px 17px}.section-title h2,.editor-head h2,.key-head h2{font:700 17px/1.25 var(--sans);margin:0;letter-spacing:-.02em}.section-title .small,.editor-head .small,.key-head .small{color:#53695e;margin-left:8px;letter-spacing:.08em}.algo{display:flex;gap:3px}.algo button{min-width:33px;height:28px;font:600 12px var(--mono)}button.selected{color:#f3f3e4;background:var(--ink);border-color:var(--ink)}
 .routing{height:103px;display:flex;align-items:stretch;justify-content:center;margin:6px 0 3px}.stack{min-width:39px;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;position:relative;border-bottom:2px solid #859a86;padding:0 5px}.stack:first-child{border-bottom-left-radius:2px}.stack:last-child{border-bottom-right-radius:2px}.node{height:19px;min-width:27px;font:600 11px var(--mono);border:1px solid #a5af9e;background:#e0e5d4;border-radius:2px;position:relative;z-index:1;padding:0 3px}.node.car{background:#364d40;color:#eef0dc;border-color:#364d40}.node[aria-pressed=true]{outline:2px solid #c16a46;outline-offset:0px}.connector{height:5px;background:#8d9c8d;width:1px}.node.fb:after{content:"↺";position:absolute;left:calc(100% + 3px);top:1px;color:#646e61;font:13px var(--sans)}.route-foot{display:flex;flex-wrap:wrap;align-items:center;gap:9px;margin-top:11px}.route-foot label,.gain-control{font-size:12px;font-weight:600}.route-foot input{width:90px}.route-foot output{min-width:28px;font:11px var(--mono)}.route-foot .out{margin-left:auto;text-align:right;font:10px var(--mono);color:#53695e}
-.edit-tabs{display:flex;gap:4px}.edit-tabs button{font:600 11px var(--mono);min-width:42px;height:27px}.editor-head{gap:8px;flex-wrap:wrap}.role{font:600 11px var(--mono);color:#80513c;margin-left:9px}.params{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));margin:17px 0 0}.param{border-left:1px solid #c7ccbc;padding:0 13px;min-width:0}.param:first-child{border-left:0;padding-left:0}.param:last-child{padding-right:0}.param label{font:600 12px var(--mono);display:block;color:#4b6256}.param output{display:block;font:650 19px/1.4 var(--mono);letter-spacing:-.05em}.param input{width:100%;margin:5px 0 1px}input[type=range]{accent-color:#486654;height:17px;cursor:pointer}.edit-foot{margin:12px 0 0;color:var(--soft);font-size:11px}
+.edit-tabs{display:flex;gap:4px}.edit-tabs button{font:600 11px var(--mono);min-width:42px;height:27px}.editor-head{gap:8px;flex-wrap:wrap}.role{font:600 11px var(--mono);color:#80513c;margin-left:9px}.params{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));margin:17px 0 0}.param{border-left:1px solid #c7ccbc;padding:0 13px;min-width:0}.param:first-child{border-left:0;padding-left:0}.param:last-child{padding-right:0}.param label{font:600 12px var(--mono);display:block;color:#4b6256}.param output{display:block;font:650 19px/1.4 var(--mono);letter-spacing:-.05em}.param input{width:100%;margin:5px 0 1px}input[type=range]{accent-color:#486654;height:17px;cursor:pointer}.waves{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:14px}.waves .small{font:600 11px var(--mono);color:#4b6256;margin-right:6px;letter-spacing:.06em}.waves button{display:flex;align-items:center;gap:6px;height:27px;padding:0 9px;font:600 11px var(--mono)}.waves svg{width:22px;height:11px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linejoin:round;stroke-linecap:round}.edit-foot{margin:12px 0 0;color:var(--soft);font-size:11px}
 .key-head{gap:12px;flex-wrap:wrap}.key-controls{gap:10px;font-size:12px}.key-controls button{height:27px;min-width:27px}.key-controls output{font:650 12px var(--mono)}.gain-control{margin-left:9px}.key-controls input{width:80px}.keys{height:118px;position:relative;background:#273c34;display:flex;gap:2px;padding:3px;border-radius:4px;margin-top:11px;touch-action:none;user-select:none}.piano{position:relative;flex:1;background:linear-gradient(#ebece2,#fffdf2 33%,#f5f3e8 93%,#d6d5c9 94%);border-radius:0 0 4px 4px;border:1px solid #b5b6a8;display:flex;justify-content:center;align-items:flex-end;padding-bottom:10px;font:600 11px var(--mono);color:#58675c;touch-action:none}.piano.black{position:absolute;z-index:1;top:3px;width:7.8%;height:65%;transform:translateX(-50%);background:linear-gradient(#263830,#35463b 80%,#23332b 86%);color:#e1e3d3;border:1px solid #1c2d25;box-shadow:1px 2px 2px #1c2d2533;padding-bottom:7px}.piano.down{background:#e9aa81!important;color:#322f22;border-color:#a76f4f}.piano small{font:9px var(--mono);margin-left:4px;color:#6c7d70}.key-foot{display:flex;justify-content:space-between;gap:15px;color:var(--soft);font-size:11px;margin-top:9px}.error{color:#922f24;min-height:0;margin:0}.error:not(:empty){margin:12px 0}.files{margin-top:15px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}.files button{border:0;background:transparent;text-decoration:underline;text-underline-offset:3px;padding:1px 0;color:#4e6359;font-size:12px}.files span{margin-left:auto;color:#4e6359;font:10px var(--mono)}
 @media(max-width:760px){main{padding:15px 12px 22px}.top-grid{grid-template-columns:1fr 1fr}.module,.screen{padding:12px}.deck{padding:9px}.descriptor{font-size:10px}.title .device{display:none}.params{grid-template-columns:repeat(3,1fr);row-gap:14px}.param:nth-child(4){border:0;padding-left:0}.edit-tabs button{min-width:34px}.screen-foot button{padding:0 7px}}
 @media(max-width:580px){.top-grid{grid-template-columns:1fr}.title{padding:16px 4px}.screen canvas{height:34px}.routing{height:101px}.editor-head{align-items:flex-start;flex-direction:column}.role{font-size:10px}.keys{height:102px}.key-head .small{display:none}.key-controls{gap:5px}.key-controls input{width:53px}.key-foot{display:block}.files span{width:100%;margin:0}.piano small{display:none}.mast{font-size:9px}.section-title .small{font-size:9px}}
@@ -58,7 +58,7 @@ main{max-width:1140px;margin:0 auto;padding:22px 32px 24px}
 <div class="scope-grid" id="scope-grid"></div>
 <p class="monitor-caption">OP1〜8 は最後に押した鍵の波形（Combination では編集中の Timbre）。最終出力には和音とリリース中の余韻も含まれます。</p>
 </section>
-<section class="module"><div class="editor-head"><h2>音色編集 <span class="role" id="role"></span></h2><div class="edit-tabs" id="operators" aria-label="編集するオペレーター"></div></div><div class="params" id="params"></div><p class="edit-foot" id="editHint"></p></section>
+<section class="module"><div class="editor-head"><h2>音色編集 <span class="role" id="role"></span></h2><div class="edit-tabs" id="operators" aria-label="編集するオペレーター"></div></div><div class="waves" id="waves" role="group" aria-label="波形"><span class="small">WAVE</span></div><div class="params" id="params"></div><p class="edit-foot" id="editHint"></p></section>
 <section class="module"><div class="key-head"><h2>鍵盤 <span class="small">Keyboard</span></h2><div class="key-controls"><span>Oct</span><button id="octDown" aria-label="1オクターブ下げる">−</button><output id="octave"></output><button id="octUp" aria-label="1オクターブ上げる">＋</button><label for="gain" class="gain-control">音量</label><input type="range" id="gain" min="0" max="1" step=".01" value=".65"></div></div><div id="keys" class="keys" aria-label="演奏鍵盤"></div><div class="key-foot"><span>A〜K で演奏 ／ W・E・T・Y・U が黒鍵</span><span>Shift で強く弾く</span></div>
 <div class="midi wheels" role="group" aria-label="ピッチベンドとモジュレーション"><span class="small">WHEEL</span><label for="bendWheel">ベンド</label><input type="range" id="bendWheel" min="-1" max="1" step=".01" value="0"><output id="bendValue" for="bendWheel">0.0</output><label for="modWheel">モジュレーション</label><input type="range" id="modWheel" min="0" max="1" step=".01" value="0"><label for="bendRange">ベンド幅</label><select id="bendRange"></select></div>
 <div class="midi" role="group" aria-label="MIDI 入力"><span class="small">MIDI</span><button id="midiEnable">MIDI 機器を使う</button><select id="midiInput" aria-label="MIDI 入力機器" hidden></select><select id="midiChannel" aria-label="受信する MIDI チャンネル" hidden></select><i class="dot" id="midiDot" aria-hidden="true"></i><span id="midiStatus" role="status"></span></div></section>
@@ -90,6 +90,10 @@ function route(algorithm) { return ROUTES[Math.min(ALGORITHMS.length, Math.max(1
 // FM–8 algorithm that contains the same wiring, with OP6 (feedback) moved to OP8.
 // The two unused operators are silent, so the sound stays the same.
 const LEGACY = {1:[10,[0,1,2,3,5,7]], 5:[72,[0,1,2,3,6,7]], 32:[88,[0,1,2,3,4,7]]};
+// Operator waveforms. An operator is [ratio, level, attack, decay, sustain, release, wave];
+// files without the seventh number play a sine.
+const WAVES = ["Sine", "Saw", "Square", "Pulse", "Triangle"];
+function waveOf(op) { const w = op[6]; return Number.isInteger(w) && w >= 0 && w < WAVES.length ? w : 0; }
 const SILENT_OPERATOR = [1,0,0.006,0.3,1,0.15];
 function upgradePatch(p) {
   if (!p || !Array.isArray(p.operators) || p.operators.length !== 6 || !LEGACY[p.algorithm]) return p;
@@ -126,7 +130,42 @@ function programSetup(program) {
 }
 
 const tau = 2 * Math.PI;
-const sine = Float32Array.from({length:2049}, (_, i) => Math.sin(tau * i / 2048));
+const TABLE = 2048, ROW = TABLE + 1, LEVELS = 11;
+const sine = Float32Array.from({length:ROW}, (_, i) => Math.sin(tau * i / TABLE));
+// The sine, then band-limited tables with 1024, 512, … 1 harmonics for saw, square, pulse
+// (high a quarter of each cycle) and triangle, each from its Fourier series with a peak of 1.
+const tables = (() => {
+  const out = new Float32Array((1 + 4 * LEVELS) * ROW);
+  out.set(sine);
+  for (let wave = 1; wave <= 4; wave++) {
+    const sum = new Float64Array(TABLE), levels = [];
+    for (let k = 1; k <= 1024; k++) {
+      let weight = 0, shift = 0;
+      if (wave === 1) weight = 1 / k;
+      else if (wave === 2 && k % 2) weight = 1 / k;
+      else if (wave === 3 && k % 4) { weight = sine[k * TABLE / 8 % TABLE] / k; shift = TABLE / 4; }
+      else if (wave === 4 && k % 2) weight = (k % 4 === 1 ? 1 : -1) / (k * k);
+      if (weight) for (let i = 0; i < TABLE; i++) sum[i] += weight * sine[(k * i + shift) % TABLE];
+      if ((k & (k - 1)) === 0) levels.push(sum.slice());
+    }
+    levels.reverse().forEach((level, l) => {
+      let peak = 0;
+      for (const v of level) peak = Math.max(peak, Math.abs(v));
+      const base = (1 + (wave - 1) * LEVELS + l) * ROW;
+      for (let i = 0; i < TABLE; i++) out[base + i] = level[i] / peak;
+      out[base + TABLE] = out[base];
+    });
+  }
+  return out;
+})();
+// The richest table whose harmonics stay below half the sample rate at this frequency (cycles per sample).
+function tableOffset(wave, frequency) {
+  if (!wave) return 0;
+  const limit = frequency > 0 ? 0.5 / frequency : Infinity;
+  let level = 0;
+  while (level < LEVELS - 1 && (1024 >> level) > limit) level++;
+  return (1 + (wave - 1) * LEVELS + level) * ROW;
+}
 // Mod wheel at full depth: ±VIBRATO_DEPTH semitones at VIBRATO_HZ. Wheel moves glide over about 4 ms.
 const VIBRATO_DEPTH = 0.5, VIBRATO_HZ = 5.5, GLIDE_SECONDS = 0.004;
 
@@ -189,11 +228,14 @@ class PreviewEngine {
       this.slots[this.allocate()] = {
         id, note, algorithm, timbre, serial: ++this.serial, released:false, velocity, feedback,
         route:route(algorithm), gains:timbreGains(t), recent:0, older:0, values:new Float64Array(OPS),
-        ops:operators.map(([ratio, level, a, d, s, r]) => ({
-          p:0, step:(hz * ratio / this.rate) % 1, level, env:0, stage:0,
+        ops:operators.map(op => {
+          const [ratio, level, a, d, s, r] = op;
+          return {
+          table:tableOffset(waveOf(op), hz * ratio / this.rate), p:0, step:(hz * ratio / this.rate) % 1, level, env:0, stage:0,
           attack:1 / Math.max(1, a * this.rate), decay:(1-s) / Math.max(1, d * this.rate),
           sustain:s, releaseSamples:Math.max(1, r * this.rate), release:0
-        }))
+          };
+        })
       };
     });
   }
@@ -251,8 +293,8 @@ class PreviewEngine {
           for(let k=0;k<sources.length;k++) input+=values[sources[k]];
           let turns=o.p + input * 6/tau;
           if(i===OPS-1) turns+=(v.recent+v.older)*v.feedback*2/tau;
-          const position=(turns-Math.floor(turns))*2048, k=Math.floor(position);
-          values[i]=(sine[k]+(sine[k+1]-sine[k])*(position-k))*o.env*o.level*v.velocity;
+          const position=(turns-Math.floor(turns))*TABLE, k=Math.floor(position), t=o.table+k;
+          values[i]=(tables[t]+(tables[t+1]-tables[t])*(position-k))*o.env*o.level*v.velocity;
           o.p+=o.step*pitch[n];
           if(o.p>=1) o.p-=Math.floor(o.p);
         }
@@ -284,7 +326,7 @@ class RustEngine {
     timbres.forEach((t, i) => {
       this.wasm.timbre(i, t.on ? 1 : 0, t.volume, t.pan, t.transpose, t.detune, t.keyLow, t.keyHigh, t.velocityLow, t.velocityHigh);
       this.wasm.patch(i, t.program.algorithm, t.program.feedback);
-      t.program.operators.forEach((op, k) => this.wasm.operator(i, k, ...op));
+      t.program.operators.forEach((op, k) => this.wasm.operator(i, k, ...op.slice(0, 6), waveOf(op)));
     });
   }
   focus(timbre) { this.wasm.focus(timbre); }
@@ -415,6 +457,10 @@ function route(algorithm) { return ROUTES[Math.min(ALGORITHMS.length, Math.max(1
 // FM–8 algorithm that contains the same wiring, with OP6 (feedback) moved to OP8.
 // The two unused operators are silent, so the sound stays the same.
 const LEGACY = {1:[10,[0,1,2,3,5,7]], 5:[72,[0,1,2,3,6,7]], 32:[88,[0,1,2,3,4,7]]};
+// Operator waveforms. An operator is [ratio, level, attack, decay, sustain, release, wave];
+// files without the seventh number play a sine.
+const WAVES = ["Sine", "Saw", "Square", "Pulse", "Triangle"];
+function waveOf(op) { const w = op[6]; return Number.isInteger(w) && w >= 0 && w < WAVES.length ? w : 0; }
 const SILENT_OPERATOR = [1,0,0.006,0.3,1,0.15];
 function upgradePatch(p) {
   if (!p || !Array.isArray(p.operators) || p.operators.length !== 6 || !LEGACY[p.algorithm]) return p;
@@ -1154,6 +1200,7 @@ function redrawEditor(){
   $("algoPrev").disabled=patch.algorithm===1;$("algoNext").disabled=patch.algorithm===ALGORITHMS.length;
   drawRouting(r);
   paramElements.forEach(({range,out},j)=>{range.value=patch.operators[selected][j];out.value=displayValue(j,Number(range.value))});
+  waveButtons.forEach((b,w)=>{const on=waveOf(patch.operators[selected])===w;b.classList.toggle("selected",on);b.setAttribute("aria-pressed",on)});
   $("feedback").value=patch.feedback;$("fbVal").value=Math.round(patch.feedback*100)+"%";
 }
 controls.forEach(([label,unit,min,max,step],j)=>{
@@ -1162,6 +1209,14 @@ controls.forEach(([label,unit,min,max,step],j)=>{
   const out=document.createElement("output");out.setAttribute("for",range.id);
   range.oninput=()=>{patch.operators[selected][j]=+range.value;out.value=displayValue(j,+range.value);changed()};
   wrap.append(cap,out,range);$("params").append(wrap);paramElements.push({range,out});
+});
+// Waveform of the operator being edited. Saw, square, pulse and triangle are band-limited.
+const waveIcons=["M1 6Q6.5-4 12 6T23 6","M1 2L12 10V2L23 10","M1 2H12V10H23","M1 2H4V10H20V2H23","M1 6L6.5 2L17.5 10L23 6"];
+const waveButtons=WAVES.map((name,w)=>{
+  const b=el("button","");b.setAttribute("aria-label",name+" 波");
+  b.innerHTML='<svg viewBox="0 0 24 12" aria-hidden="true"><path d="'+waveIcons[w]+'"/></svg>';b.append(name);
+  b.onclick=()=>{patch.operators[selected][6]=w;changed();redrawEditor()};
+  $("waves").append(b);return b;
 });
 $("feedback").oninput=e=>{patch.feedback=+e.target.value;$("fbVal").value=Math.round(patch.feedback*100)+"%";changed()};
 function fillPresets(){
@@ -1584,7 +1639,7 @@ function validate(p){
     !Number.isInteger(p.algorithm) || p.algorithm<1 || p.algorithm>ALGORITHMS.length ||
     !Number.isFinite(p.feedback) || p.feedback<0 || p.feedback>1 ||
     !Array.isArray(p.operators) || p.operators.length!==OPS ||
-    !p.operators.every(op=>Array.isArray(op)&&op.length===6&&op.every((v,j)=>Number.isFinite(v)&&v>=controls[j][2]&&v<=controls[j][3])))
+    !p.operators.every(op=>Array.isArray(op)&&(op.length===6||op.length===7&&waveOf(op)===op[6])&&op.slice(0,6).every((v,j)=>Number.isFinite(v)&&v>=controls[j][2]&&v<=controls[j][3])))
     throw Error("FM–8 または FM–6 の音色ファイルを選んでください。");
 }
 function validateCombi(c){

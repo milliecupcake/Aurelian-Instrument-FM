@@ -238,6 +238,40 @@ function voices(proc) { return Array.from(proc.engine.slots).filter(Boolean).map
   assert.equal(crossings(soloLeft), 44, "A4 for 0.1 s");
   assert.equal(Math.round(crossings(right) / 4800 * 48000 / 10), Math.round(466.16 / 10), "detuned a semitone up");
 }
+// Waveforms: band-limited tables, table choice by pitch, and old six-number operators still play a sine.
+{
+  const tables = vm.runInContext("tables", worklet), tableOffset = vm.runInContext("tableOffset", worklet);
+  const waveOf = vm.runInContext("waveOf", worklet), ROW = 2049, LEVELS = 11;
+  assert.equal(tables.length, (1 + 4 * LEVELS) * ROW);
+  const table = (wave, level) => Array.from(tables.subarray((1 + (wave - 1) * LEVELS + level) * ROW, (2 + (wave - 1) * LEVELS + level) * ROW));
+  for (let wave = 1; wave <= 4; wave++) for (let level = 0; level < LEVELS; level++) {
+    const t = table(wave, level);
+    assert(Math.abs(Math.max(...t.map(Math.abs)) - 1) < 1e-6);
+    assert.equal(t[2048], t[0]);
+  }
+  const high = table(3, 0).slice(0, 2048).filter(v => v > 0).length;
+  assert(high >= 480 && high <= 560, "the pulse is high a quarter of the time");
+  assert.equal(tableOffset(1, 20 / 48000), ROW);
+  assert.equal(tableOffset(1, 110 / 48000), 4 * ROW);
+  assert.equal(tableOffset(2, 3000 / 48000), (1 + LEVELS + 7) * ROW);
+  assert.equal(tableOffset(0, 0.3), 0);
+  assert.deepEqual([waveOf([1,1,0,0,1,0]), waveOf([1,1,0,0,1,0,3]), waveOf([1,1,0,0,1,0,9])], [0, 3, 0]);
+
+  const crossings = x => x.slice(1).filter((s, i) => x[i] <= 0 && s > 0).length;
+  const play = operator => {
+    const patch = {...sine, operators:sine.operators.map((op, i) => i === 0 ? operator(op) : op)};
+    const synth = combination([part(patch, {}), ...Array.from({length:15}, () => off(sine))]);
+    start(synth, 1, 69);
+    return renderStereo(synth, 4800)[0];
+  };
+  const plain = play(op => op.slice(0, 6));
+  assert.deepEqual(play(op => [...op.slice(0, 6), 0]), plain, "wave 0 is the same sine");
+  for (const wave of [1, 2, 3, 4]) {
+    const shaped = play(op => [...op.slice(0, 6), wave]);
+    assert.notDeepEqual(shaped, plain);
+    assert(Math.abs(crossings(shaped) - crossings(plain)) <= 1, "same pitch");
+  }
+}
 // Pitch bend and mod wheel: centred wheels change nothing, a bend moves sounding notes, vibrato keeps the average pitch.
 {
   const crossings = x => x.slice(1).filter((s, i) => x[i] <= 0 && s > 0).length;
@@ -371,4 +405,4 @@ for (const p of [...bank, ...combis.flatMap(c => c.timbres.map(t => t.program))]
   router.receive([0xb1, 121, 0], "kbd");
   assert.deepEqual(take(), [["bend", 0], ["modulation", 0], ["lift", "midi:kbd:2:60"]]);
 }
-console.log("Nine-channel scope, algorithm, phrase, combination, MIDI and pitch wheel checks passed.");
+console.log("Nine-channel scope, algorithm, phrase, combination, MIDI, pitch wheel and waveform checks passed.");

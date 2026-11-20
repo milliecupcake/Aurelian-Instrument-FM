@@ -2,7 +2,42 @@
 // the same messages into Wasm and does its entire sample loop in src/engine.rs.
 __SHARED_LIB__
 const tau = 2 * Math.PI;
-const sine = Float32Array.from({length:2049}, (_, i) => Math.sin(tau * i / 2048));
+const TABLE = 2048, ROW = TABLE + 1, LEVELS = 11;
+const sine = Float32Array.from({length:ROW}, (_, i) => Math.sin(tau * i / TABLE));
+// The sine, then band-limited tables with 1024, 512, … 1 harmonics for saw, square, pulse
+// (high a quarter of each cycle) and triangle, each from its Fourier series with a peak of 1.
+const tables = (() => {
+  const out = new Float32Array((1 + 4 * LEVELS) * ROW);
+  out.set(sine);
+  for (let wave = 1; wave <= 4; wave++) {
+    const sum = new Float64Array(TABLE), levels = [];
+    for (let k = 1; k <= 1024; k++) {
+      let weight = 0, shift = 0;
+      if (wave === 1) weight = 1 / k;
+      else if (wave === 2 && k % 2) weight = 1 / k;
+      else if (wave === 3 && k % 4) { weight = sine[k * TABLE / 8 % TABLE] / k; shift = TABLE / 4; }
+      else if (wave === 4 && k % 2) weight = (k % 4 === 1 ? 1 : -1) / (k * k);
+      if (weight) for (let i = 0; i < TABLE; i++) sum[i] += weight * sine[(k * i + shift) % TABLE];
+      if ((k & (k - 1)) === 0) levels.push(sum.slice());
+    }
+    levels.reverse().forEach((level, l) => {
+      let peak = 0;
+      for (const v of level) peak = Math.max(peak, Math.abs(v));
+      const base = (1 + (wave - 1) * LEVELS + l) * ROW;
+      for (let i = 0; i < TABLE; i++) out[base + i] = level[i] / peak;
+      out[base + TABLE] = out[base];
+    });
+  }
+  return out;
+})();
+// The richest table whose harmonics stay below half the sample rate at this frequency (cycles per sample).
+function tableOffset(wave, frequency) {
+  if (!wave) return 0;
+  const limit = frequency > 0 ? 0.5 / frequency : Infinity;
+  let level = 0;
+  while (level < LEVELS - 1 && (1024 >> level) > limit) level++;
+  return (1 + (wave - 1) * LEVELS + level) * ROW;
+}
 // Mod wheel at full depth: ±VIBRATO_DEPTH semitones at VIBRATO_HZ. Wheel moves glide over about 4 ms.
 const VIBRATO_DEPTH = 0.5, VIBRATO_HZ = 5.5, GLIDE_SECONDS = 0.004;
 
@@ -65,11 +100,14 @@ class PreviewEngine {
       this.slots[this.allocate()] = {
         id, note, algorithm, timbre, serial: ++this.serial, released:false, velocity, feedback,
         route:route(algorithm), gains:timbreGains(t), recent:0, older:0, values:new Float64Array(OPS),
-        ops:operators.map(([ratio, level, a, d, s, r]) => ({
-          p:0, step:(hz * ratio / this.rate) % 1, level, env:0, stage:0,
+        ops:operators.map(op => {
+          const [ratio, level, a, d, s, r] = op;
+          return {
+          table:tableOffset(waveOf(op), hz * ratio / this.rate), p:0, step:(hz * ratio / this.rate) % 1, level, env:0, stage:0,
           attack:1 / Math.max(1, a * this.rate), decay:(1-s) / Math.max(1, d * this.rate),
           sustain:s, releaseSamples:Math.max(1, r * this.rate), release:0
-        }))
+          };
+        })
       };
     });
   }
@@ -127,8 +165,8 @@ class PreviewEngine {
           for(let k=0;k<sources.length;k++) input+=values[sources[k]];
           let turns=o.p + input * 6/tau;
           if(i===OPS-1) turns+=(v.recent+v.older)*v.feedback*2/tau;
-          const position=(turns-Math.floor(turns))*2048, k=Math.floor(position);
-          values[i]=(sine[k]+(sine[k+1]-sine[k])*(position-k))*o.env*o.level*v.velocity;
+          const position=(turns-Math.floor(turns))*TABLE, k=Math.floor(position), t=o.table+k;
+          values[i]=(tables[t]+(tables[t+1]-tables[t])*(position-k))*o.env*o.level*v.velocity;
           o.p+=o.step*pitch[n];
           if(o.p>=1) o.p-=Math.floor(o.p);
         }
@@ -160,7 +198,7 @@ class RustEngine {
     timbres.forEach((t, i) => {
       this.wasm.timbre(i, t.on ? 1 : 0, t.volume, t.pan, t.transpose, t.detune, t.keyLow, t.keyHigh, t.velocityLow, t.velocityHigh);
       this.wasm.patch(i, t.program.algorithm, t.program.feedback);
-      t.program.operators.forEach((op, k) => this.wasm.operator(i, k, ...op));
+      t.program.operators.forEach((op, k) => this.wasm.operator(i, k, ...op.slice(0, 6), waveOf(op)));
     });
   }
   focus(timbre) { this.wasm.focus(timbre); }

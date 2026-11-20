@@ -21,6 +21,10 @@ function route(algorithm) { return ROUTES[Math.min(ALGORITHMS.length, Math.max(1
 // FM–8 algorithm that contains the same wiring, with OP6 (feedback) moved to OP8.
 // The two unused operators are silent, so the sound stays the same.
 const LEGACY = {1:[10,[0,1,2,3,5,7]], 5:[72,[0,1,2,3,6,7]], 32:[88,[0,1,2,3,4,7]]};
+// Operator waveforms. An operator is [ratio, level, attack, decay, sustain, release, wave];
+// files without the seventh number play a sine.
+const WAVES = ["Sine", "Saw", "Square", "Pulse", "Triangle"];
+function waveOf(op) { const w = op[6]; return Number.isInteger(w) && w >= 0 && w < WAVES.length ? w : 0; }
 const SILENT_OPERATOR = [1,0,0.006,0.3,1,0.15];
 function upgradePatch(p) {
   if (!p || !Array.isArray(p.operators) || p.operators.length !== 6 || !LEGACY[p.algorithm]) return p;

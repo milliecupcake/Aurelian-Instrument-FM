@@ -35,10 +35,11 @@ mod audio {
         });
     }
     #[no_mangle]
-    pub extern "C" fn operator(timbre: usize, i: usize, ratio: f32, level: f32, attack: f32, decay: f32, sustain: f32, release: f32) {
+    #[allow(clippy::too_many_arguments)]
+    pub extern "C" fn operator(timbre: usize, i: usize, ratio: f32, level: f32, attack: f32, decay: f32, sustain: f32, release: f32, wave: u32) {
         with_engine(|e| {
             if let Some(op) = e.programs.get_mut(timbre).and_then(|p| p.operators.get_mut(i)) {
-                *op = Operator { ratio, level, attack, decay, sustain, release };
+                *op = Operator { wave, ratio, level, attack, decay, sustain, release };
             }
         });
     }
